@@ -108,33 +108,33 @@ void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night) {
         cloud(c, cx - lroundf(4 * s), cy + lroundf(10 * s), s * 0.95f, Tone::Paper);
         break;
     case Sky::Clouds:
-        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Soft);
+        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Faint);
         cloud(c, cx - lroundf(6 * s), cy + lroundf(8 * s), s, Tone::Paper);
         break;
     case Sky::Overcast:
-        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Mid);
-        cloud(c, cx - lroundf(6 * s), cy + lroundf(8 * s), s, Tone::Soft);
+        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Soft);
+        cloud(c, cx - lroundf(6 * s), cy + lroundf(8 * s), s, Tone::Faint);
         break;
     case Sky::Drizzle:
-        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Faint);
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Whisper);
         drizzleDots(c, cx, cy + lroundf(16 * s), s);
         break;
     case Sky::Rain:
-        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Soft);
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Faint);
         rainStreaks(c, cx, cy + lroundf(16 * s), s, 4, t);
         break;
     case Sky::Storm:
-        cloud(c, cx, cy - lroundf(14 * s), s, Tone::Mid);
+        cloud(c, cx, cy - lroundf(14 * s), s, Tone::Soft);
         bolt(c, cx, cy + lroundf(10 * s), s);
         break;
     case Sky::Snow:
-        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Faint);
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Whisper);
         flake(c, cx - lroundf(16 * s), cy + lroundf(22 * s), s);
         flake(c, cx + lroundf(2 * s), cy + lroundf(32 * s), s);
         flake(c, cx + lroundf(20 * s), cy + lroundf(20 * s), s);
         break;
     case Sky::Sleet:
-        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Soft);
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Faint);
         rainStreaks(c, cx - lroundf(8 * s), cy + lroundf(16 * s), s, 2, t);
         flake(c, cx + lroundf(18 * s), cy + lroundf(26 * s), s);
         break;

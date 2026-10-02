@@ -25,8 +25,10 @@ OUT_DIR = os.path.join(ROOT, "src", "fonts")
 FONTS = [
     ("Sans9",       "OpenSans-Regular.ttf", 9),
     ("Sans11",      "OpenSans-Regular.ttf", 11),
+    ("Sans13",      "OpenSans-Regular.ttf", 13),
     ("SansBold11",  "OpenSans-Bold.ttf",    11),
     ("SansBold14",  "OpenSans-Bold.ttf",    14),
+    ("SansBold17",  "OpenSans-Bold.ttf",    17),
     ("SansBold20",  "OpenSans-Bold.ttf",    20),
     ("SansBold48",  "OpenSans-Bold.ttf",    48),
 ]
