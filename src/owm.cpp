@@ -97,7 +97,27 @@ static void decode(const JsonDocument &doc, Weather &w) {
     }
 }
 
-bool fetch(Weather &out) {
+// "Fri, 02 Oct 2026 20:59:12 GMT" -> Unix time, or 0 if it doesn't parse.
+static time_t parseHttpDate(const String &s) {
+    char mon[4] = {0};
+    int d, y, hh, mm, ss;
+    if (sscanf(s.c_str(), "%*3s, %d %3s %d %d:%d:%d", &d, mon, &y, &hh, &mm, &ss) != 6) return 0;
+    static const char *names = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    const char *hit = strstr(names, mon);
+    if (!hit) return 0;
+    int m = (int)(hit - names) / 3 + 1;
+    // Days since 1970-01-01 for a proleptic Gregorian date (no timegm() in newlib here).
+    int yy = y - (m <= 2);
+    int era = yy / 400;
+    int yoe = yy - era * 400;
+    int doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+    int doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    long days = (long)era * 146097 + doe - 719468;
+    return (time_t)(days * 86400L + hh * 3600L + mm * 60L + ss);
+}
+
+bool fetch(Weather &out, time_t *serverTime) {
+    if (serverTime) *serverTime = 0;
     WiFiClientSecure tls;
     tls.setInsecure();   // no CA bundle on the device; the request carries no secrets beyond the API key
     HTTPClient http;
@@ -107,7 +127,11 @@ bool fetch(Weather &out) {
         Serial.println("[owm] could not start request");
         return false;
     }
+    const char *wanted[] = { "Date" };
+    http.collectHeaders(wanted, 1);
     int status = http.GET();
+    // The server's clock comes free with every response - saves a separate NTP sync.
+    if (serverTime && status > 0) *serverTime = parseHttpDate(http.header("Date"));
     if (status != HTTP_CODE_OK) {
         Serial.printf("[owm] HTTP %d %s\n", status, status < 0 ? http.errorToString(status).c_str() : "");
         if (status == 401) Serial.println("[owm] check the API key and that One Call 3.0 is enabled");

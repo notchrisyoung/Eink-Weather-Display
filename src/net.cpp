@@ -1,23 +1,61 @@
 #include "net.h"
+#include "config.h"
 #include <Arduino.h>
 #include <WiFi.h>
-#include <time.h>
+#include <sys/time.h>
 
 namespace net {
 
-bool connect(const char *ssid, const char *password, uint32_t timeoutMs) {
-    WiFi.mode(WIFI_STA);
-    WiFi.setSleep(false);
-    WiFi.begin(ssid, password);
+// Remembered across deep sleep so the next wake can skip the channel scan.
+RTC_DATA_ATTR static uint8_t savedBssid[6];
+RTC_DATA_ATTR static int32_t savedChannel = 0;
+
+static bool waitFor(uint32_t timeoutMs) {
     uint32_t start = millis();
     while (WiFi.status() != WL_CONNECTED) {
-        if (millis() - start > timeoutMs) {
-            Serial.printf("[net] no Wi-Fi after %lu ms (status %d)\n", (unsigned long)timeoutMs, WiFi.status());
-            return false;
-        }
-        delay(100);
+        if (millis() - start > timeoutMs) return false;
+        delay(20);
     }
-    Serial.printf("[net] connected %s, %d dBm\n", WiFi.localIP().toString().c_str(), WiFi.RSSI());
+    return true;
+}
+
+bool connect(const char *ssid, const char *password, uint32_t timeoutMs) {
+    uint32_t start = millis();
+    WiFi.persistent(false);   // don't rewrite flash on every wake
+    WiFi.mode(WIFI_STA);
+#ifdef WIFI_STATIC_IP
+    {
+        IPAddress ip, gw, mask, dns;
+        ip.fromString(WIFI_STATIC_IP);
+        gw.fromString(WIFI_GATEWAY);
+        mask.fromString(WIFI_SUBNET);
+        dns.fromString(WIFI_DNS);
+        WiFi.config(ip, gw, mask, dns);   // skips DHCP
+    }
+#endif
+    bool ok = false;
+    if (savedChannel > 0) {
+        WiFi.begin(ssid, password, savedChannel, savedBssid, true);
+        ok = waitFor(3000);
+        if (!ok) {
+            Serial.println("[net] fast reconnect failed, scanning");
+            WiFi.disconnect(true, false);
+            savedChannel = 0;
+        }
+    }
+    if (!ok) {
+        WiFi.begin(ssid, password);
+        uint32_t used = millis() - start;
+        ok = waitFor(timeoutMs > used ? timeoutMs - used : 0);
+    }
+    if (!ok) {
+        Serial.printf("[net] no Wi-Fi (status %d)\n", WiFi.status());
+        return false;
+    }
+    memcpy(savedBssid, WiFi.BSSID(), 6);
+    savedChannel = WiFi.channel();
+    Serial.printf("[net] connected in %lu ms, ch %ld, %d dBm\n", (unsigned long)(millis() - start),
+                  (long)savedChannel, WiFi.RSSI());
     return true;
 }
 
@@ -28,15 +66,19 @@ void useTimeZone(const char *posixTz) {
     tzset();
 }
 
-bool syncClock(const char *posixTz, uint32_t timeoutMs) {
-    configTzTime(posixTz, "pool.ntp.org", "time.google.com", "time.cloudflare.com");
+void setClock(time_t utc) {
+    struct timeval tv = { utc, 0 };
+    settimeofday(&tv, nullptr);
+}
+
+bool syncClock(uint32_t timeoutMs) {
+    configTzTime(WX_TIMEZONE, "pool.ntp.org", "time.google.com", "time.cloudflare.com");
     struct tm tm;
     if (!getLocalTime(&tm, timeoutMs)) {
         Serial.println("[net] NTP sync failed");
         return false;
     }
-    Serial.printf("[net] clock %04d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1,
-                  tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    Serial.println("[net] clock set from NTP");
     return true;
 }
 

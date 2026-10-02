@@ -49,6 +49,7 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "--no-probe")) st.probeTemp = NAN;
     }
     drawWeatherScreen(c, w, st);
+    drawUpdateStamp(c, w, st);
 
     FILE *f = fopen(out, "wb");
     fprintf(f, "P5\n%d %d\n255\n", EPD_WIDTH, EPD_HEIGHT);

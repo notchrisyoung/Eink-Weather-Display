@@ -82,10 +82,12 @@ int batteryPercent(float v) {
     // Typical single-cell LiPo resting voltage curve.
     static const float volts[] = { 3.30f, 3.45f, 3.60f, 3.68f, 3.74f, 3.79f, 3.85f, 3.93f, 4.02f, 4.10f, 4.18f };
     if (v <= volts[0]) return 0;
-    for (int i = 1; i < 11; i++)
-        if (v < volts[i])
-            return lroundf((i - 1 + (v - volts[i - 1]) / (volts[i] - volts[i - 1])) * 10.0f);
-    return 100;
+    if (v >= volts[10]) return 100;
+    int i = 1;
+    while (v >= volts[i]) i++;
+    float pct = (i - 1 + (v - volts[i - 1]) / (volts[i] - volts[i - 1])) * 10.0f;
+    // A voltage reading can't honestly resolve better than ~5%, so don't pretend to.
+    return (int)lroundf(pct / 5.0f) * 5;
 }
 
 // ---- Sections ---------------------------------------------------------------
@@ -104,24 +106,25 @@ static void header(Canvas &c, const Weather &w, const DeviceStatus &st) {
     snprintf(buf, sizeof buf, "%s, %s %d", days[tm.tm_wday], months[tm.tm_mon], tm.tm_mday);
     c.text(SansBold14, Canvas::W / 2, 37, buf, Align::Center, Tone::Paper, Tone::Ink);
 
-    // Right side, laid out right-to-left: battery, wifi, update time.
-    int x = Canvas::W - L::margin - 37;
+    // Battery sits at the far right; the update stamp (drawn separately) goes left of it.
     int pct = batteryPercent(st.batteryVolts);
-    drawBattery(c, x, 20, pct, Tone::Paper);
-    x -= 8;
+    drawBattery(c, Canvas::W - L::margin - 37, 20, pct, Tone::Paper);
     if (pct >= 0) {
         snprintf(buf, sizeof buf, "%d%%", pct);
-        c.text(Sans9, x, 34, buf, Align::Right, Tone::Paper, Tone::Ink);
-        x -= c.textWidth(Sans9, buf) + 14;
+        c.text(Sans9, Canvas::W - L::margin - 45, 34, buf, Align::Right, Tone::Paper, Tone::Ink);
     }
-    x -= 22;                                   // four bars, 22 px wide
-    drawWifiBars(c, x, 36, st.wifiRssi, Tone::Paper, Tone::Dark);
+}
 
-    char when[16];
-    fmtClock(when, sizeof when, w.observedAt);
-    if (st.fresh) snprintf(buf, sizeof buf, "Updated %s", when);
-    else          snprintf(buf, sizeof buf, "Offline - data from %s", when);
-    c.text(Sans9, x - 12, 34, buf, Align::Right, st.fresh ? Tone::Soft : Tone::Paper, Tone::Ink);
+// x where the battery block starts, so the stamp can sit just left of it.
+static int batteryBlockLeft(Canvas &c, const DeviceStatus &st) {
+    int x = Canvas::W - L::margin - 45;
+    int pct = batteryPercent(st.batteryVolts);
+    if (pct >= 0) {
+        char buf[16];
+        snprintf(buf, sizeof buf, "%d%%", pct);
+        x -= c.textWidth(Sans9, buf);
+    }
+    return x;
 }
 
 static void nowPanel(Canvas &c, const Weather &w) {
@@ -323,6 +326,16 @@ void drawWeatherScreen(Canvas &c, const Weather &w, const DeviceStatus &st) {
     c.vline(L::daysX - 14, L::splitY + 18, 176, Tone::Soft);
     hourlyChart(c, w);
     outlook(c, w);
+}
+
+void drawUpdateStamp(Canvas &c, const Weather &w, const DeviceStatus &st) {
+    int x = batteryBlockLeft(c, st) - 14 - 22;   // four Wi-Fi bars, 22 px wide
+    drawWifiBars(c, x, 36, st.wifiRssi, Tone::Paper, Tone::Dark);
+    char when[16], buf[48];
+    fmtClock(when, sizeof when, w.observedAt);
+    if (st.fresh) snprintf(buf, sizeof buf, "Updated %s", when);
+    else          snprintf(buf, sizeof buf, "Offline - data from %s", when);
+    c.text(Sans9, x - 12, 34, buf, Align::Right, st.fresh ? Tone::Soft : Tone::Paper, Tone::Ink);
 }
 
 void drawMessageScreen(Canvas &c, const char *title, const char *detail) {

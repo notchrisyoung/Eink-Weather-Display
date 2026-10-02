@@ -2,41 +2,72 @@
 #include "config.h"
 #include <Arduino.h>
 #include <esp_sleep.h>
+#include <algorithm>
 
 namespace power {
 
-float batteryVolts() {
+RTC_DATA_ATTR static float smoothedVolts = 0;
+
+static float sampleVolts() {
     analogSetPinAttenuation(PIN_BATTERY_ADC, ADC_11db);
-    uint32_t mv = 0;
-    const int samples = 16;
-    for (int i = 0; i < samples; i++) mv += analogReadMilliVolts(PIN_BATTERY_ADC);   // factory-calibrated
-    return mv / (float)samples * BATTERY_DIVIDER / 1000.0f;
+    analogReadMilliVolts(PIN_BATTERY_ADC);   // first conversion after wake is often off; discard it
+    const int n = 31;
+    uint16_t mv[n];
+    for (int i = 0; i < n; i++) {
+        mv[i] = analogReadMilliVolts(PIN_BATTERY_ADC);   // uses the chip's factory calibration
+        delayMicroseconds(200);
+    }
+    std::nth_element(mv, mv + n / 2, mv + n);   // median rejects spikes
+    return mv[n / 2] * BATTERY_DIVIDER * BATTERY_CALIBRATION / 1000.0f;
 }
 
-static bool inQuietWindow(int minuteOfDay) {
-    if (QUIET_FROM_MIN == QUIET_UNTIL_MIN) return false;
-    if (QUIET_FROM_MIN < QUIET_UNTIL_MIN)
-        return minuteOfDay >= QUIET_FROM_MIN && minuteOfDay < QUIET_UNTIL_MIN;
-    return minuteOfDay >= QUIET_FROM_MIN || minuteOfDay < QUIET_UNTIL_MIN;   // spans midnight
+float batteryVolts() {
+    float v = sampleVolts();
+    // Smooth across wakes so the percentage doesn't wander. A jump up of more
+    // than 0.1 V means it's been charged, so start over from the new reading.
+    if (smoothedVolts < 1.0f || v > smoothedVolts + 0.1f || v < 1.0f) smoothedVolts = v;
+    else smoothedVolts = smoothedVolts * 0.7f + v * 0.3f;
+    Serial.printf("[power] battery %.3f V (smoothed %.3f V)\n", v, smoothedVolts);
+    return smoothedVolts;
+}
+
+struct Window { int first, last, every; };   // HHMM, HHMM, minutes
+static const Window kWindows[] = UPDATE_WINDOWS;
+
+static int toMinutes(int hhmm) { return (hhmm / 100) * 60 + hhmm % 100; }
+
+static bool isUpdateMinute(int m) {
+    for (const Window &w : kWindows) {
+        int a = toMinutes(w.first), b = toMinutes(w.last);
+        if (m >= a && m <= b && (m - a) % w.every == 0) return true;
+    }
+    return false;
+}
+
+bool inUpdateWindow(time_t now) {
+    struct tm tm;
+    localtime_r(&now, &tm);
+    int m = tm.tm_hour * 60 + tm.tm_min;
+    for (const Window &w : kWindows)
+        if (m >= toMinutes(w.first) && m <= toMinutes(w.last)) return true;
+    return false;
 }
 
 uint32_t secondsUntilNextUpdate(time_t now) {
     struct tm tm;
     localtime_r(&now, &tm);
     int secOfDay = tm.tm_hour * 3600 + tm.tm_min * 60 + tm.tm_sec;
-
-    // Next slot boundary strictly in the future.
-    int slot = UPDATE_EVERY_MIN * 60;
-    int next = (secOfDay / slot + 1) * slot;
-
-    // Walk forward past any slots that fall in the quiet window.
-    for (int guard = 0; guard < 24 * 60 / UPDATE_EVERY_MIN + 1; guard++) {
-        if (!inQuietWindow((next / 60) % (24 * 60))) break;
-        next += slot;
+    // Look ahead minute by minute, up to two days, for the next slot. The 30 s
+    // margin means a wake that came a moment early (5:59:58) counts as the
+    // 6:00 update instead of scheduling another wake two seconds later.
+    for (int m = (secOfDay + 30) / 60 + 1; m < 2 * 24 * 60; m++) {
+        if (isUpdateMinute(m % (24 * 60))) {
+            // The ESP32's sleep timer tends to run a little fast; aim a few
+            // seconds past the boundary so the clock reads :00, not :59.
+            return (uint32_t)(m * 60 - secOfDay) + 3;
+        }
     }
-    // The ESP32's sleep timer tends to run a little fast; aim a few seconds
-    // past the boundary so the clock reads :00, not :59.
-    return (uint32_t)(next - secOfDay) + 3;
+    return 3600;   // no windows configured - check back hourly
 }
 
 void sleepFor(uint32_t seconds) {
