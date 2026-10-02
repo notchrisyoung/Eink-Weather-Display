@@ -50,7 +50,7 @@ A ground-up rewrite. Nothing from v1's code was carried over: new firmware, new 
 
 ## v1 (June 2024)
 
-The first version was an Arduino IDE sketch adapted from an existing open-source ESP32 / OpenWeatherMap e-paper display (G6EJD's LilyGo 4.7" weather display).
+The first version was an Arduino IDE sketch based on David Bird's (G6EJD) LilyGo 4.7" OpenWeatherMap weather display, which inspired this project. His original copyright notice is kept with that code, at the `v1.0` tag.
 
 ![v1](docs/photos/v1.jpg)
 

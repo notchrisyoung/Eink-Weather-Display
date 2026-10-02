@@ -45,13 +45,13 @@ Rendered from the firmware's own drawing code with sample data (see [tools/previ
 |---|---|
 | LilyGo T5 4.7" (ESP32-WROVER, PSRAM) | The framebuffer lives in PSRAM |
 | DS18B20 temperature probe (optional) | Data on **GPIO 15** with a 4.7k pull-up to 3V3. Without it, the tile shows UV index instead. |
-| Battery: two 18650 cells | In a 3D-printed holder, connected to the board's single-cell battery input. Voltage is read through the board's divider on **GPIO 36**. |
+| Battery: two 18650 cells in parallel | In a 3D-printed holder, wired in parallel as one 3.7 V pack into the board's single-cell battery input. Voltage is read through the board's divider on **GPIO 36**. |
 | 3D-printed case | Holds the panel, board and battery holder |
 
 | Inside the case | Temperature probe |
 |---|---|
 | ![Board and battery pack inside the case](docs/photos/inside.jpg) | ![DS18B20 soldered to the sensor connector](docs/photos/probe-wiring.jpg) |
-| The T5 board with the two-cell 18650 holder glued in beside it | The DS18B20 lies flat on the board, soldered straight to the sensor connector: ground, data on GPIO 15, and power, with a 4.7 kΩ pull-up (yellow-violet-red) between data and power |
+| The T5 board with the two 18650 cells (wired in parallel) glued in beside it | The DS18B20 lies flat on the board, soldered straight to the sensor connector: ground, data on GPIO 15, and power, with a 4.7 kΩ pull-up (yellow-violet-red) between data and power |
 
 ## Setup
 
@@ -83,4 +83,4 @@ Rendered from the firmware's own drawing code with sample data (see [tools/previ
 
 ## Credits
 
-Inspired by the many ESP32 e-paper weather displays in the maker community. Uses the [LilyGo EPD47](https://github.com/Xinyuan-LilyGO/LilyGo-EPD47) driver, [ArduinoJson](https://arduinojson.org/), the OneWire and DallasTemperature libraries, and weather data from [OpenWeatherMap](https://openweathermap.org/). The fonts are generated from [Open Sans](https://fonts.google.com/specimen/Open+Sans), which is under the SIL Open Font License (`assets/fonts/OFL.txt`).
+Inspired by David Bird's (G6EJD) ESP32 OpenWeatherMap e-paper weather display for the LilyGo 4.7", which v1 of this project was based on. See the [changelog](CHANGELOG.md). Uses the [LilyGo EPD47](https://github.com/Xinyuan-LilyGO/LilyGo-EPD47) driver, [ArduinoJson](https://arduinojson.org/), the OneWire and DallasTemperature libraries, and weather data from [OpenWeatherMap](https://openweathermap.org/). The fonts are generated from [Open Sans](https://fonts.google.com/specimen/Open+Sans), which is under the SIL Open Font License (`assets/fonts/OFL.txt`).
