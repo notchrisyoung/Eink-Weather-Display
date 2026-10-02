@@ -144,6 +144,12 @@ void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night) {
     }
 }
 
+// E-paper renders mid-greys darker than they look on a monitor, so the photo's
+// lit side is brightened (roughly gamma 0.55) and the shadow side is lifted a
+// little so craters still show in it, while staying clearly darker.
+static const uint8_t kLitCurve[16]    = { 0, 3, 5, 6, 7, 8, 9, 10, 11, 11, 12, 13, 13, 14, 14, 15 };
+static const uint8_t kShadowCurve[16] = { 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6 };
+
 void drawMoon(Canvas &c, int x0, int y0, float phase, bool southern) {
     // Photo of the full moon, with the unlit part darkened to match the phase.
     const float r = kMoonSize / 2.0f, centre = (kMoonSize - 1) / 2.0f;
@@ -160,9 +166,11 @@ void drawMoon(Canvas &c, int x0, int y0, float phase, bool southern) {
             v = (x & 1) ? (v >> 4) : (v & 0x0F);
             float sx = southern ? -dx : dx;
             bool lit = waxing ? (sx >= edge) : (sx <= -edge);
-            c.pixel(x0 + x, y0 + y, lit ? v : v / 5);   // dark side keeps a hint of detail
+            c.pixel(x0 + x, y0 + y, lit ? kLitCurve[v] : kShadowCurve[v]);
         }
     }
+    // Faint outline so a thin crescent's lit edge doesn't melt into the tile.
+    c.ring(x0 + kMoonSize / 2, y0 + kMoonSize / 2, kMoonSize / 2, 1, Tone::Soft);
 }
 
 void drawWifiBars(Canvas &c, int x, int baseline, int rssi, uint8_t tone, uint8_t off) {
