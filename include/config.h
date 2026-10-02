@@ -1,18 +1,29 @@
 #pragma once
 // ---------------------------------------------------------------------------
-// User settings. Wi-Fi and the API key live in secrets.h (not committed) -
-// copy secrets.example.h to secrets.h and fill it in.
+// User settings. Wi-Fi, the API key and your location live in secrets.h
+// (not committed) - copy secrets.example.h to secrets.h and fill it in.
 // ---------------------------------------------------------------------------
 
+#include "credentials.h"   // secrets.h may override the location settings below
+
 // ---- Where to forecast ----------------------------------------------------
+// Defaults only - put your real coordinates in secrets.h so they stay private.
+#ifndef WX_LATITUDE
 #define WX_LATITUDE    "33.45"        // decimal degrees
+#endif
+#ifndef WX_LONGITUDE
 #define WX_LONGITUDE   "-112.07"
+#endif
+#ifndef WX_PLACE_NAME
 #define WX_PLACE_NAME  "Home"         // shown in the header
+#endif
 #define WX_LANGUAGE    "en"           // OpenWeatherMap description language
 #define WX_IMPERIAL    1              // 1 = °F, mph, inHg   0 = °C, km/h, hPa
 
 // POSIX time-zone string, e.g. "PST8PDT,M3.2.0,M11.1.0" or "MST7" (Arizona).
+#ifndef WX_TIMEZONE
 #define WX_TIMEZONE    "MST7"
+#endif
 #define CLOCK_24H      0
 
 // ---- Update schedule -------------------------------------------------------

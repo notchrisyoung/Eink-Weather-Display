@@ -42,10 +42,9 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 
 1. Install [PlatformIO](https://platformio.org/) (the VS Code extension is easiest).
 2. Get an [OpenWeatherMap](https://openweathermap.org/api/one-call-3) API key and subscribe it to **One Call API 3.0**. The free tier includes 1,000 calls a day, and this display uses about 70.
-3. Copy `include/secrets.example.h` to `include/secrets.h`, then fill in your Wi-Fi details and API key. `secrets.h` is gitignored.
+3. Copy `include/secrets.example.h` to `include/secrets.h`, then fill in your Wi-Fi details, API key and location. `secrets.h` is gitignored, so none of these end up on GitHub.
 4. Edit `include/config.h`:
-   - Latitude, longitude and place name
-   - Units (imperial or metric) and POSIX time zone
+   - Units (imperial or metric)
    - 12/24-hour clock, update interval and quiet hours
 5. `pio run -t upload`, then `pio device monitor` to watch the log.
 
