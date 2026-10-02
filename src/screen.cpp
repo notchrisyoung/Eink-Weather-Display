@@ -330,12 +330,12 @@ void drawWeatherScreen(Canvas &c, const Weather &w, const DeviceStatus &st) {
 
 void drawUpdateStamp(Canvas &c, const Weather &w, const DeviceStatus &st) {
     int x = batteryBlockLeft(c, st) - 14 - 22;   // four Wi-Fi bars, 22 px wide
-    drawWifiBars(c, x, 36, st.wifiRssi, Tone::Paper, Tone::Dark);
+    drawWifiBars(c, x, 36, st.wifiRssi, Tone::Paper, Tone::Mid);
     char when[16], buf[48];
     fmtClock(when, sizeof when, w.observedAt);
     if (st.fresh) snprintf(buf, sizeof buf, "Updated %s", when);
     else          snprintf(buf, sizeof buf, "Offline - data from %s", when);
-    c.text(Sans9, x - 12, 34, buf, Align::Right, st.fresh ? Tone::Soft : Tone::Paper, Tone::Ink);
+    c.text(Sans9, x - 12, 34, buf, Align::Right, Tone::Paper, Tone::Ink);
 }
 
 void drawMessageScreen(Canvas &c, const char *title, const char *detail) {
