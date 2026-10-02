@@ -25,6 +25,7 @@
 #define WX_TIMEZONE    "MST7"
 #endif
 #define CLOCK_24H      0
+#define HEADER_DARK    1              // 1 = white text on a black bar, 0 = black on white
 
 // ---- Update schedule -------------------------------------------------------
 // Each window is {first update, last update, every N minutes}, times as HHMM

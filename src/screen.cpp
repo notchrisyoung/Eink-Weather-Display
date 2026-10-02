@@ -24,6 +24,13 @@ namespace L {
     const int daysX = 400, daysRight = 936;
 }
 
+// ---- Header colours ---------------------------------------------------------
+#if HEADER_DARK
+static const uint8_t kBarBg = Tone::Ink, kBarText = Tone::Paper, kBarOff = Tone::Mid;
+#else
+static const uint8_t kBarBg = Tone::Paper, kBarText = Tone::Ink, kBarOff = Tone::Soft;
+#endif
+
 // ---- Small formatting helpers ----------------------------------------------
 
 static void fmtTemp(char *out, size_t n, float t) {
@@ -92,9 +99,12 @@ int batteryPercent(float v) {
 
 // ---- Sections ---------------------------------------------------------------
 
+static int batteryBlockLeft(Canvas &c, const DeviceStatus &st);
+
 static void header(Canvas &c, const Weather &w, const DeviceStatus &st) {
-    c.fillRect(0, 0, Canvas::W, L::headerH, Tone::Ink);
-    c.text(SansBold20, L::margin, 39, WX_PLACE_NAME, Align::Left, Tone::Paper, Tone::Ink);
+    c.fillRect(0, 0, Canvas::W, L::headerH, kBarBg);
+    if (!HEADER_DARK) c.fillRect(0, L::headerH - 3, Canvas::W, 3, Tone::Ink);   // rule under a light bar
+    int nameEnd = c.text(SansBold20, L::margin, 39, WX_PLACE_NAME, Align::Left, kBarText, kBarBg);
 
     char buf[64];
     struct tm tm;
@@ -103,15 +113,23 @@ static void header(Canvas &c, const Weather &w, const DeviceStatus &st) {
     static const char *days[7] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
     static const char *months[12] = { "January", "February", "March", "April", "May", "June", "July",
                                       "August", "September", "October", "November", "December" };
+    // The date follows the place name and uses the longest form that fits
+    // before the space kept for the update stamp ("Offline since 12:59 PM").
+    int dateX = nameEnd + 28;
+    int room = batteryBlockLeft(c, st) - 14 - 22 - 12 - c.textWidth(Sans11, "Offline since 12:59 PM") - 24 - dateX;
     snprintf(buf, sizeof buf, "%s, %s %d", days[tm.tm_wday], months[tm.tm_mon], tm.tm_mday);
-    c.text(SansBold14, Canvas::W / 2, 37, buf, Align::Center, Tone::Paper, Tone::Ink);
+    if (c.textWidth(SansBold14, buf) > room)
+        snprintf(buf, sizeof buf, "%s, %.3s %d", days[tm.tm_wday], months[tm.tm_mon], tm.tm_mday);
+    if (c.textWidth(SansBold14, buf) > room)
+        snprintf(buf, sizeof buf, "%.3s, %.3s %d", days[tm.tm_wday], months[tm.tm_mon], tm.tm_mday);
+    c.text(SansBold14, dateX, 37, buf, Align::Left, kBarText, kBarBg);
 
     // Battery sits at the far right; the update stamp (drawn separately) goes left of it.
     int pct = batteryPercent(st.batteryVolts);
-    drawBattery(c, Canvas::W - L::margin - 37, 20, pct, Tone::Paper);
+    drawBattery(c, Canvas::W - L::margin - 37, 18, pct, kBarText);
     if (pct >= 0) {
         snprintf(buf, sizeof buf, "%d%%", pct);
-        c.text(Sans9, Canvas::W - L::margin - 45, 34, buf, Align::Right, Tone::Paper, Tone::Ink);
+        c.text(Sans11, Canvas::W - L::margin - 45, 33, buf, Align::Right, kBarText, kBarBg);
     }
 }
 
@@ -122,7 +140,7 @@ static int batteryBlockLeft(Canvas &c, const DeviceStatus &st) {
     if (pct >= 0) {
         char buf[16];
         snprintf(buf, sizeof buf, "%d%%", pct);
-        x -= c.textWidth(Sans9, buf);
+        x -= c.textWidth(Sans11, buf);
     }
     return x;
 }
@@ -300,24 +318,24 @@ static void outlook(Canvas &c, const Weather &w) {
     for (int i = 0; i < n; i++) {
         const DayOutlook &d = w.days[i];
         int cx = L::daysX + i * colW + colW / 2;
-        if (i) c.vline(L::daysX + i * colW, L::splitY + 18, 176, Tone::Faint);
+        if (i) c.vline(L::daysX + i * colW, L::splitY + 18, 168, Tone::Faint);
 
         struct tm tm;
         localtime_r(&d.at, &tm);
         static const char *wd[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-        c.text(SansBold11, cx, L::splitY + 34, wd[tm.tm_wday], Align::Center);
-        drawSkyIcon(c, cx, L::splitY + 84, 54, d.sky, false);
+        c.text(SansBold11, cx, L::splitY + 30, wd[tm.tm_wday], Align::Center);
+        drawSkyIcon(c, cx, L::splitY + 70, 50, d.sky, false);
 
         char buf[16];
         fmtTemp(buf, sizeof buf, d.high);
-        c.text(SansBold14, cx, L::splitY + 146, buf, Align::Center);
+        c.text(SansBold14, cx, L::splitY + 126, buf, Align::Center);
         fmtTemp(buf, sizeof buf, d.low);
-        c.text(Sans11, cx, L::splitY + 172, buf, Align::Center, Tone::Mid);
+        c.text(Sans11, cx, L::splitY + 150, buf, Align::Center, Tone::Mid);
         if (d.rainChance >= 0.1f) {
             snprintf(buf, sizeof buf, "%d%%", (int)lroundf(d.rainChance * 100));
             int tw = c.textWidth(Sans9, buf);
-            drawDrop(c, cx - tw / 2 - 6, L::splitY + 192, 12, Tone::Mid);
-            c.text(Sans9, cx + 6, L::splitY + 198, buf, Align::Center, Tone::Dark);
+            drawDrop(c, cx - tw / 2 - 6, L::splitY + 170, 12, Tone::Mid);
+            c.text(Sans9, cx + 6, L::splitY + 176, buf, Align::Center, Tone::Dark);
         }
     }
 }
@@ -330,25 +348,26 @@ void drawWeatherScreen(Canvas &c, const Weather &w, const DeviceStatus &st) {
     nowPanel(c, w);
     tiles(c, w, st);
     c.hline(L::margin, L::splitY, Canvas::W - 2 * L::margin, Tone::Soft);
-    c.vline(L::daysX - 14, L::splitY + 18, 176, Tone::Soft);
+    c.vline(L::daysX - 14, L::splitY + 18, 168, Tone::Soft);
     hourlyChart(c, w);
     outlook(c, w);
 }
 
 void drawUpdateStamp(Canvas &c, const Weather &w, const DeviceStatus &st) {
     int x = batteryBlockLeft(c, st) - 14 - 22;   // four Wi-Fi bars, 22 px wide
-    drawWifiBars(c, x, 36, st.wifiRssi, Tone::Paper, Tone::Mid);
+    drawWifiBars(c, x, 35, st.wifiRssi, kBarText, kBarOff);
     char when[16], buf[48];
     fmtClock(when, sizeof when, w.observedAt);
     if (st.fresh) snprintf(buf, sizeof buf, "Updated %s", when);
-    else          snprintf(buf, sizeof buf, "Offline - data from %s", when);
-    c.text(Sans9, x - 12, 34, buf, Align::Right, Tone::Paper, Tone::Ink);
+    else          snprintf(buf, sizeof buf, "Offline since %s", when);
+    c.text(Sans11, x - 12, 33, buf, Align::Right, kBarText, kBarBg);
 }
 
 void drawMessageScreen(Canvas &c, const char *title, const char *detail) {
     c.fill(Tone::Paper);
-    c.fillRect(0, 0, Canvas::W, L::headerH, Tone::Ink);
-    c.text(SansBold20, L::margin, 39, WX_PLACE_NAME, Align::Left, Tone::Paper, Tone::Ink);
+    c.fillRect(0, 0, Canvas::W, L::headerH, kBarBg);
+    if (!HEADER_DARK) c.fillRect(0, L::headerH - 3, Canvas::W, 3, Tone::Ink);
+    c.text(SansBold20, L::margin, 39, WX_PLACE_NAME, Align::Left, kBarText, kBarBg);
     drawSkyIcon(c, Canvas::W / 2, 200, 140, Sky::Overcast, false);
     c.text(SansBold20, Canvas::W / 2, 330, title, Align::Center);
     c.text(Sans11, Canvas::W / 2, 372, detail, Align::Center, Tone::Dark);
