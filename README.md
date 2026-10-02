@@ -9,7 +9,7 @@ A battery-powered weather station display built on the **LilyGo T5 4.7" e-paper 
 - City, date, time of last update, and a **local temperature reading** from a DS18B20 probe wired to the board
 - Current temperature, conditions text and a large weather icon
 - Wind speed and direction on a compass rose
-- Sunrise/sunset times and the current moon phase (drawn moon icon)
+- Sunrise/sunset times and the current moon phase, shown over a moon photo (`moon.h`)
 - Forecast boxes for the next several 3-hour periods, with small icons
 - Wi-Fi signal strength and battery level
 
