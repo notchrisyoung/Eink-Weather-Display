@@ -1,8 +1,10 @@
 # E-Ink Weather Display
 
-A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ESP32 + 960x540, 16-level greyscale). Every 15 minutes it wakes up, pulls the forecast from OpenWeatherMap, reads a local temperature probe, redraws the panel, and goes back into deep sleep. E-paper keeps its image with no power, so the display stays readable between updates while the board draws almost nothing.
+A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ESP32 + 960x540, 16-level greyscale). Every 15 to 30 minutes during the day, it wakes up, pulls the forecast from OpenWeatherMap, reads a local temperature probe, redraws the panel if anything changed, and goes back into deep sleep. E-paper keeps its image with no power, so the display stays readable between updates while the board draws almost nothing.
 
-![Dashboard](docs/screenshots/dashboard.png)
+![The display on a desk](docs/photos/display.jpg)
+
+Version 2.0.0. See the [changelog](CHANGELOG.md) for what changed from v1, including a side-by-side photo.
 
 ## Screenshots
 
@@ -14,8 +16,6 @@ Rendered from the firmware's own drawing code with sample data (see [tools/previ
 | **Daytime:** current conditions, detail tiles, 24-hour chart and 7-day outlook | **Night:** moon icon for clear skies, nearly full moon, and the UV tile when no probe is fitted |
 | ![Offline](docs/screenshots/offline.png) | ![Waiting for weather](docs/screenshots/waiting.png) |
 | **Offline:** an update failed, so the last good forecast is kept and the header says when it's from | **First boot with no forecast yet:** shows why, e.g. a rejected API key or no Wi-Fi |
-
-<!-- PHOTOS: add a photo of the finished display here, e.g. ![On the wall](docs/photo.jpg) -->
 
 ## What's on the screen
 
@@ -45,7 +45,13 @@ Rendered from the firmware's own drawing code with sample data (see [tools/previ
 |---|---|
 | LilyGo T5 4.7" (ESP32-WROVER, PSRAM) | The framebuffer lives in PSRAM |
 | DS18B20 temperature probe (optional) | Data on **GPIO 15** with a 4.7k pull-up to 3V3. Without it, the tile shows UV index instead. |
-| 1-cell LiPo | Read through the board's divider on **GPIO 36** |
+| Battery: two 18650 cells | In a 3D-printed holder, connected to the board's single-cell battery input. Voltage is read through the board's divider on **GPIO 36**. |
+| 3D-printed case | Holds the panel, board and battery holder |
+
+| Inside the case | Temperature probe |
+|---|---|
+| ![Board and battery pack inside the case](docs/photos/inside.jpg) | ![DS18B20 soldered to the sensor connector](docs/photos/probe-wiring.jpg) |
+| The T5 board with the two-cell 18650 holder glued in beside it | The DS18B20 lies flat on the board, soldered straight to the sensor connector: ground, data on GPIO 15, and power, with a 4.7 kΩ pull-up (yellow-violet-red) between data and power |
 
 ## Setup
 

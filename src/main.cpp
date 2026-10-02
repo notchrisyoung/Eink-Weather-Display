@@ -18,6 +18,7 @@
 #include "power.h"
 #include "probe.h"
 #include "screen.h"
+#include "version.h"
 
 RTC_DATA_ATTR static Weather lastForecast;
 RTC_DATA_ATTR static bool haveForecast = false;
@@ -30,7 +31,7 @@ static bool clockIsSet(time_t t) { return t > 1700000000; }   // before Nov 2023
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("\n[main] wake");
+    Serial.println("\n[main] wake, firmware " FIRMWARE_VERSION);
     net::useTimeZone(WX_TIMEZONE);
 
     // Battery first, while nothing else is drawing current.
