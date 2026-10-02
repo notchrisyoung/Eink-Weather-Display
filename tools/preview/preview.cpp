@@ -11,7 +11,7 @@ static Weather sample(time_t now) {
     Weather w = {};
     w.observedAt = now;
     w.temp = 72.4f; w.feelsLike = 70.1f; w.humidity = 34; w.pressure = 1013.2f; w.uvIndex = 6.2f;
-    w.windSpeed = 8.3f; w.windGust = 15.1f; w.windFrom = 315;
+    w.windSpeed = 16.3f; w.windGust = 24.1f; w.windFrom = 292;
     w.sky = Sky::FewClouds; w.isNight = false;
     strcpy(w.condition, "scattered clouds");
     w.todayLow = 63; w.todayHigh = 81;

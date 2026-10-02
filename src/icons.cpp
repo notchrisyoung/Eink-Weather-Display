@@ -191,28 +191,6 @@ void drawBattery(Canvas &c, int x, int y, int percent, uint8_t tone) {
     c.fillRect(x + 3, y + 3, fill, h - 6, tone);
 }
 
-void drawWindDial(Canvas &c, int cx, int cy, int r, float fromDegrees) {
-    c.ring(cx, cy, r, 2, Tone::Mid);
-    for (int i = 0; i < 16; i++) {
-        float a = i * kPi / 8;
-        int len = (i % 4 == 0) ? 7 : 3;
-        c.line(cx + lroundf(sinf(a) * r), cy - lroundf(cosf(a) * r),
-               cx + lroundf(sinf(a) * (r - len)), cy - lroundf(cosf(a) * (r - len)),
-               Tone::Mid, i % 4 == 0 ? 2 : 1);
-    }
-    // Arrow flies downwind: tail at the "from" side, head at the opposite side.
-    float a = fromDegrees * kPi / 180.0f;
-    float ux = sinf(a), uy = -cosf(a);
-    int tailX = cx + lroundf(ux * (r - 10)), tailY = cy + lroundf(uy * (r - 10));
-    int tipX = cx - lroundf(ux * (r - 6)), tipY = cy - lroundf(uy * (r - 6));
-    c.line(tailX, tailY, cx - lroundf(ux * (r - 18)), cy - lroundf(uy * (r - 18)), Tone::Ink, 3);
-    float px = -uy, py = ux;   // perpendicular
-    int baseX = cx - lroundf(ux * (r - 22)), baseY = cy - lroundf(uy * (r - 22));
-    c.fillTriangle(tipX, tipY, baseX + lroundf(px * 8), baseY + lroundf(py * 8),
-                   baseX - lroundf(px * 8), baseY - lroundf(py * 8), Tone::Ink);
-    c.fillCircle(tailX, tailY, 4, Tone::Ink);
-}
-
 void drawDrop(Canvas &c, int cx, int cy, int h, uint8_t tone) {
     int r = h / 3;
     c.fillCircle(cx, cy + h / 2 - r, r, tone);

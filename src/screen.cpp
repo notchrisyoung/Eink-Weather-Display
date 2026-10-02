@@ -197,10 +197,13 @@ static void tiles(Canvas &c, const Weather &w, const DeviceStatus &st) {
     snprintf(buf, sizeof buf, "%d", (int)lroundf(speed));
     int end = c.text(SansBold20, x + 14, y + 76, buf, Align::Left, Tone::Ink, Tone::Whisper);
     c.text(Sans9, end + 4, y + 76, WX_IMPERIAL ? "mph" : "km/h", Align::Left, Tone::Dark, Tone::Whisper);
-    if (gust > speed + 1) snprintf(buf, sizeof buf, "%s, gust %d", compassPoint(w.windFrom), (int)lroundf(gust));
-    else snprintf(buf, sizeof buf, "from %s", compassPoint(w.windFrom));
-    c.text(Sans9, x + 14, y + 112, buf, Align::Left, Tone::Dark, Tone::Whisper);
-    drawWindDial(c, x + L::tileW - 38, y + 50, 24, w.windFrom);
+    // Direction in words where the compass used to be; gusts on the caption row.
+    end = c.text(Sans11, x + 14, y + 112, "from ", Align::Left, Tone::Dark, Tone::Whisper);
+    c.text(SansBold14, end, y + 112, compassPoint(w.windFrom), Align::Left, Tone::Ink, Tone::Whisper);
+    if (gust > speed + 1) {
+        snprintf(buf, sizeof buf, "gust %d", (int)lroundf(gust));
+        c.text(Sans9, x + L::tileW - 14, y + 26, buf, Align::Right, Tone::Dark, Tone::Whisper);
+    }
 
     // Humidity, with a fill bar
     tile(c, 1, 0, "Humidity", &x, &y);

@@ -13,7 +13,7 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 - **Header:** place name, date, time of the last update, Wi-Fi signal and battery level
 - **Now:** a large condition icon, the temperature, "feels like", a description, and today's high and low
 - **Detail tiles:**
-  - Wind speed and direction on a compass, with gusts
+  - Wind speed, direction (e.g. "from WNW") and gusts
   - Humidity
   - Pressure
   - Sunrise and sunset
@@ -56,7 +56,7 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 | `src/owm.*` | One Call 3.0 request, streamed and filtered JSON parsing |
 | `src/weather.h` | Forecast data model and condition-code mapping |
 | `src/screen.*` | Dashboard layout |
-| `src/icons.*` | Weather icons, wind dial and status glyphs (drawn in code), and the moon |
+| `src/icons.*` | Weather icons and status glyphs (drawn in code), and the moon |
 | `src/moon_image.h` | Moon photo used by the moon tile |
 | `src/canvas.*` | Drawing layer over the e-paper framebuffer |
 | `src/net.*` | Wi-Fi and NTP time |
