@@ -30,6 +30,9 @@ public:
     void hline(int x, int y, int len, uint8_t tone);
     void vline(int x, int y, int len, uint8_t tone);
     void line(int x0, int y0, int x1, int y1, uint8_t tone, int thickness = 1);
+    // Smooth (anti-aliased) line with sub-pixel end points and round caps.
+    void stroke(float x0, float y0, float x1, float y1, float width, uint8_t tone);
+    uint8_t get(int x, int y) const;
     void rect(int x, int y, int w, int h, uint8_t tone);
     void fillRect(int x, int y, int w, int h, uint8_t tone);
     void roundRect(int x, int y, int w, int h, int r, uint8_t tone);

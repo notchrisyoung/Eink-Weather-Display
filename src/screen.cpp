@@ -114,9 +114,9 @@ static void header(Canvas &c, const Weather &w, const DeviceStatus &st) {
     static const char *months[12] = { "January", "February", "March", "April", "May", "June", "July",
                                       "August", "September", "October", "November", "December" };
     // The date is centred, using the longest form that stays clear of the place
-    // name on the left and the update stamp on the right (widest: "Offline 12:59 PM").
+    // name on the left and the widest possible update stamp on the right.
     const int mid = Canvas::W / 2, gap = 24;
-    int stampLeft = batteryBlockLeft(c, st) - 14 - 22 - 12 - c.textWidth(Sans11, "Offline 12:59 PM");
+    int stampLeft = batteryBlockLeft(c, st) - 14 - 22 - 12 - c.textWidth(SansBold14, st.fresh ? "12:59 PM" : "Offline 12:59 PM");
     int halfRoom = mid - (nameEnd + gap);
     if (stampLeft - gap - mid < halfRoom) halfRoom = stampLeft - gap - mid;
     int room = 2 * halfRoom;
@@ -132,7 +132,7 @@ static void header(Canvas &c, const Weather &w, const DeviceStatus &st) {
     drawBattery(c, Canvas::W - L::margin - 37, 18, pct, kBarText);
     if (pct >= 0) {
         snprintf(buf, sizeof buf, "%d%%", pct);
-        c.text(Sans11, Canvas::W - L::margin - 45, 33, buf, Align::Right, kBarText, kBarBg);
+        c.text(SansBold11, Canvas::W - L::margin - 45, 33, buf, Align::Right, kBarText, kBarBg);
     }
 }
 
@@ -143,7 +143,7 @@ static int batteryBlockLeft(Canvas &c, const DeviceStatus &st) {
     if (pct >= 0) {
         char buf[16];
         snprintf(buf, sizeof buf, "%d%%", pct);
-        x -= c.textWidth(Sans11, buf);
+        x -= c.textWidth(SansBold11, buf);
     }
     return x;
 }
@@ -238,8 +238,7 @@ static void tiles(Canvas &c, const Weather &w, const DeviceStatus &st) {
     if (!isnan(st.probeTemp)) {
         tile(c, 2, 1, TEMP_PROBE_LABEL, &x, &y);
         snprintf(buf, sizeof buf, "%.1f" DEG, st.probeTemp);
-        c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Whisper);
-        c.text(Sans9, x + 14, y + 106, "on the display", Align::Left, Tone::Dark, Tone::Whisper);
+        c.text(SansBold20, x + 14, y + 82, buf, Align::Left, Tone::Ink, Tone::Whisper);   // centred in the space below the caption
     } else {
         tile(c, 2, 1, "UV index", &x, &y);
         snprintf(buf, sizeof buf, "%d", (int)lroundf(w.uvIndex));
@@ -284,11 +283,12 @@ static void hourlyChart(Canvas &c, const Weather &w) {
     c.text(Sans9, left - 8, bottom, buf, Align::Right, Tone::Dark);
 
     // Temperature line
-    int px = 0, py = 0;
+    // Sub-pixel positions + anti-aliased strokes keep the line an even weight.
+    float px = 0, py = 0;
     for (int i = 0; i < n; i++) {
-        int x = left + (int)(i * step + step / 2);
-        int y = bottom - (int)((w.hours[i].temp - lo) / (hi - lo) * (bottom - top));
-        if (i) c.line(px, py, x, y, Tone::Ink, 3);
+        float x = left + i * step + step / 2;
+        float y = bottom - (w.hours[i].temp - lo) / (hi - lo) * (bottom - top);
+        if (i) c.stroke(px, py, x, y, 3.2f, Tone::Ink);
         px = x; py = y;
     }
     // Highlight the warmest hour
@@ -363,7 +363,7 @@ void drawUpdateStamp(Canvas &c, const Weather &w, const DeviceStatus &st) {
     fmtClock(when, sizeof when, w.observedAt);
     if (st.fresh) snprintf(buf, sizeof buf, "%s", when);
     else          snprintf(buf, sizeof buf, "Offline %s", when);
-    c.text(Sans11, x - 12, 33, buf, Align::Right, kBarText, kBarBg);
+    c.text(SansBold14, x - 12, 36, buf, Align::Right, kBarText, kBarBg);
 }
 
 void drawMessageScreen(Canvas &c, const char *title, const char *detail) {

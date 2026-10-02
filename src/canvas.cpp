@@ -33,17 +33,39 @@ void Canvas::line(int x0, int y0, int x1, int y1, uint8_t tone, int thickness) {
         }
         return;
     }
-    // Thick line: a quad made of two triangles, with round caps.
-    float ang = atan2f((float)(y1 - y0), (float)(x1 - x0));
-    float ox = -sinf(ang) * thickness / 2.0f, oy = cosf(ang) * thickness / 2.0f;
-    int ax = lroundf(x0 + ox), ay = lroundf(y0 + oy);
-    int bx = lroundf(x0 - ox), by = lroundf(y0 - oy);
-    int cx = lroundf(x1 - ox), cy = lroundf(y1 - oy);
-    int dx = lroundf(x1 + ox), dy = lroundf(y1 + oy);
-    fillTriangle(ax, ay, bx, by, cx, cy, tone);
-    fillTriangle(ax, ay, cx, cy, dx, dy, tone);
-    fillCircle(x0, y0, thickness / 2, tone);
-    fillCircle(x1, y1, thickness / 2, tone);
+    stroke((float)x0, (float)y0, (float)x1, (float)y1, (float)thickness, tone);
+}
+
+uint8_t Canvas::get(int x, int y) const {
+    if (x < 0 || x >= W || y < 0 || y >= H) return Tone::Paper;
+    uint8_t b = fb_[y * (W / 2) + x / 2];
+    return (x & 1) ? (b >> 4) : (b & 0x0F);
+}
+
+// Anti-aliased line of even width with round ends: each pixel is shaded by
+// how much of it the stroke covers, using the panel's grey levels. Overlaps
+// (e.g. where segments of a polyline meet) keep the darker value, so joins
+// don't show seams or blobs.
+void Canvas::stroke(float x0, float y0, float x1, float y1, float width, uint8_t tone) {
+    float half = width / 2.0f;
+    int minX = (int)floorf(fminf(x0, x1) - half - 1), maxX = (int)ceilf(fmaxf(x0, x1) + half + 1);
+    int minY = (int)floorf(fminf(y0, y1) - half - 1), maxY = (int)ceilf(fmaxf(y0, y1) + half + 1);
+    float dx = x1 - x0, dy = y1 - y0;
+    float len2 = dx * dx + dy * dy;
+    for (int py = minY; py <= maxY; py++)
+        for (int px = minX; px <= maxX; px++) {
+            // distance from the pixel centre to the segment
+            float t = len2 > 0 ? ((px - x0) * dx + (py - y0) * dy) / len2 : 0;
+            t = fminf(fmaxf(t, 0.0f), 1.0f);
+            float ex = px - (x0 + t * dx), ey = py - (y0 + t * dy);
+            float d = sqrtf(ex * ex + ey * ey);
+            float cover = half + 0.5f - d;
+            if (cover <= 0) continue;
+            if (cover > 1) cover = 1;
+            uint8_t under = get(px, py);
+            int v = lroundf(under + (tone - (float)under) * cover);
+            if (tone < under ? v < under : v > under) pixel(px, py, (uint8_t)v);
+        }
 }
 
 void Canvas::rect(int x, int y, int w, int h, uint8_t tone) {
