@@ -48,5 +48,5 @@
 // "[power] battery" line in the serial log, and set this to meter / logged.
 #define BATTERY_CALIBRATION 1.000f
 #define PIN_TEMP_PROBE     15          // DS18B20 data line (4.7k pull-up to 3V3)
-#define TEMP_PROBE_LABEL   "Outside"   // label for the probe reading
+#define TEMP_PROBE_LABEL   "Inside"    // the probe is mounted on the display
 #define SOUTHERN_HEMISPHERE 0          // flips the moon drawing

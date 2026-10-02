@@ -17,10 +17,10 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
   - Humidity
   - Pressure
   - Sunrise and sunset
-  - Moon phase, drawn to match tonight's moon
-  - Your local probe, or the UV index if no probe is fitted
+  - Moon phase: a moon photo shaded to match tonight's moon
+  - Inside temperature from the probe on the display, or the UV index if no probe is fitted
 - **Next 24 hours:** temperature curve over hourly chance-of-rain columns, with the warmest hour marked
-- **Next 4 days:** icon, high, low and chance of rain
+- **Next 7 days:** icon, high, low and chance of rain
 
 ## Behaviour
 
@@ -56,7 +56,8 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 | `src/owm.*` | One Call 3.0 request, streamed and filtered JSON parsing |
 | `src/weather.h` | Forecast data model and condition-code mapping |
 | `src/screen.*` | Dashboard layout |
-| `src/icons.*` | Weather icons, moon, wind dial, status glyphs (all drawn in code) |
+| `src/icons.*` | Weather icons, wind dial and status glyphs (drawn in code), and the moon |
+| `src/moon_image.h` | Moon photo used by the moon tile |
 | `src/canvas.*` | Drawing layer over the e-paper framebuffer |
 | `src/net.*` | Wi-Fi and NTP time |
 | `src/power.*` | Battery voltage, sleep scheduling |

@@ -37,7 +37,7 @@ struct Weather {
     HourPoint hours[kHours];
     uint8_t   hourCount;
 
-    static const int kDays = 4;
+    static const int kDays = 7;
     DayOutlook days[kDays];  // starts with tomorrow
     uint8_t    dayCount;
 };

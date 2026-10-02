@@ -11,6 +11,7 @@ namespace Tone {
     constexpr uint8_t Mid   = 8;
     constexpr uint8_t Soft  = 11;
     constexpr uint8_t Faint = 13;
+    constexpr uint8_t Whisper = 14;   // lightest grey the panel can show
     constexpr uint8_t Paper = 15;
 }
 

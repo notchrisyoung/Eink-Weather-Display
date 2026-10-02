@@ -1,5 +1,6 @@
 #include "icons.h"
 #include <math.h>
+#include "moon_image.h"
 
 static const float kPi = 3.14159265f;
 
@@ -143,32 +144,25 @@ void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night) {
     }
 }
 
-void drawMoon(Canvas &c, int cx, int cy, int r, float phase, bool southern) {
-    // Light grey "maria" patches make it read as the moon rather than a ball.
-    struct Spot { float x, y, r; };
-    const Spot maria[] = { {-0.30f, -0.25f, 0.28f}, {0.15f, -0.35f, 0.20f},
-                           {0.25f, 0.10f, 0.24f}, {-0.15f, 0.30f, 0.18f} };
-    float cosT = cosf(2 * kPi * phase);
-    bool waxing = phase < 0.5f;
-    for (int dy = -r; dy <= r; dy++) {
-        float half = sqrtf((float)(r * r - dy * dy));
+void drawMoon(Canvas &c, int x0, int y0, float phase, bool southern) {
+    // Photo of the full moon, with the unlit part darkened to match the phase.
+    const float r = kMoonSize / 2.0f, centre = (kMoonSize - 1) / 2.0f;
+    const float cosT = cosf(2 * kPi * phase);
+    const bool waxing = phase < 0.5f;
+    for (int y = 0; y < kMoonSize; y++) {
+        float dy = y - centre;
+        float half = sqrtf(fmaxf(r * r - dy * dy, 0));
         float edge = half * cosT;           // terminator position on this row
-        for (int dx = -(int)half; dx <= (int)half; dx++) {
-            float x = southern ? -dx : dx;
-            bool lit = waxing ? (x >= edge) : (x <= -edge);
-            uint8_t tone;
-            if (!lit) tone = Tone::Dark;
-            else {
-                tone = Tone::Faint;
-                for (const Spot &m : maria) {
-                    float mx = dx / (float)r - m.x, my = dy / (float)r - m.y;
-                    if (mx * mx + my * my < m.r * m.r) { tone = Tone::Soft; break; }
-                }
-            }
-            c.pixel(cx + dx, cy + dy, tone);
+        for (int x = 0; x < kMoonSize; x++) {
+            float dx = x - centre;
+            if (dx * dx + dy * dy > r * r) continue;   // outside the disc: leave the background
+            uint8_t v = kMoonPixels[y * kMoonRowBytes + x / 2];
+            v = (x & 1) ? (v >> 4) : (v & 0x0F);
+            float sx = southern ? -dx : dx;
+            bool lit = waxing ? (sx >= edge) : (sx <= -edge);
+            c.pixel(x0 + x, y0 + y, lit ? v : v / 5);   // dark side keeps a hint of detail
         }
     }
-    c.circle(cx, cy, r, Tone::Ink);
 }
 
 void drawWifiBars(Canvas &c, int x, int baseline, int rssi, uint8_t tone, uint8_t off) {

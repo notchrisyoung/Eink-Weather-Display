@@ -5,8 +5,9 @@
 // Weather pictogram centred on (cx, cy), roughly `size` pixels wide.
 void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night);
 
-// Moon disc of radius r, shaded for `phase` (0 = new, 0.5 = full).
-void drawMoon(Canvas &c, int cx, int cy, int r, float phase, bool southern);
+// 75 x 75 moon photo with its top-left at (x, y), shaded for `phase`
+// (0 = new, 0.5 = full).
+void drawMoon(Canvas &c, int x, int y, float phase, bool southern);
 
 // Small status glyphs for the header (drawn in `tone` on a dark bar).
 void drawWifiBars(Canvas &c, int x, int baseline, int rssi, uint8_t tone, uint8_t off);

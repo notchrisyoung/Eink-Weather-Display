@@ -20,8 +20,8 @@ namespace L {
     const int headerH = 56;
     const int tilesX = 440, tilesY = 70, tileW = 160, tileH = 122, tileGap = 12;
     const int splitY = 336;                 // top half / bottom half
-    const int chartX = 24, chartRight = 556;
-    const int daysX = 584, daysRight = 936;
+    const int chartX = 24, chartRight = 372;
+    const int daysX = 400, daysRight = 936;
 }
 
 // ---- Small formatting helpers ----------------------------------------------
@@ -156,8 +156,8 @@ static void nowPanel(Canvas &c, const Weather &w) {
 static void tile(Canvas &c, int col, int row, const char *caption, int *x, int *y) {
     *x = L::tilesX + col * (L::tileW + L::tileGap);
     *y = L::tilesY + row * (L::tileH + L::tileGap);
-    c.fillRoundRect(*x, *y, L::tileW, L::tileH, 10, Tone::Faint);
-    c.text(Sans9, *x + 14, *y + 26, caption, Align::Left, Tone::Dark, Tone::Faint);
+    c.fillRoundRect(*x, *y, L::tileW, L::tileH, 10, Tone::Whisper);
+    c.text(Sans9, *x + 14, *y + 26, caption, Align::Left, Tone::Dark, Tone::Whisper);
 }
 
 static void tiles(Canvas &c, const Weather &w, const DeviceStatus &st) {
@@ -169,17 +169,17 @@ static void tiles(Canvas &c, const Weather &w, const DeviceStatus &st) {
     float speed = WX_IMPERIAL ? w.windSpeed : w.windSpeed * 3.6f;
     float gust = WX_IMPERIAL ? w.windGust : w.windGust * 3.6f;
     snprintf(buf, sizeof buf, "%d", (int)lroundf(speed));
-    int end = c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Faint);
-    c.text(Sans9, end + 4, y + 72, WX_IMPERIAL ? "mph" : "km/h", Align::Left, Tone::Dark, Tone::Faint);
+    int end = c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Whisper);
+    c.text(Sans9, end + 4, y + 72, WX_IMPERIAL ? "mph" : "km/h", Align::Left, Tone::Dark, Tone::Whisper);
     if (gust > speed + 1) snprintf(buf, sizeof buf, "%s, gust %d", compassPoint(w.windFrom), (int)lroundf(gust));
     else snprintf(buf, sizeof buf, "from %s", compassPoint(w.windFrom));
-    c.text(Sans9, x + 14, y + 106, buf, Align::Left, Tone::Dark, Tone::Faint);
+    c.text(Sans9, x + 14, y + 106, buf, Align::Left, Tone::Dark, Tone::Whisper);
     drawWindDial(c, x + 118, y + 52, 28, w.windFrom);
 
     // Humidity, with a fill bar
     tile(c, 1, 0, "Humidity", &x, &y);
     snprintf(buf, sizeof buf, "%d%%", (int)lroundf(w.humidity));
-    c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Faint);
+    c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Whisper);
     c.fillRoundRect(x + 14, y + 92, L::tileW - 28, 12, 6, Tone::Paper);
     int fillW = (int)((L::tileW - 28) * fminf(fmaxf(w.humidity, 0), 100) / 100.0f);
     if (fillW > 12) c.fillRoundRect(x + 14, y + 92, fillW, 12, 6, Tone::Mid);
@@ -188,37 +188,42 @@ static void tiles(Canvas &c, const Weather &w, const DeviceStatus &st) {
     tile(c, 2, 0, "Pressure", &x, &y);
     if (WX_IMPERIAL) snprintf(buf, sizeof buf, "%.2f", w.pressure * 0.02953f);
     else snprintf(buf, sizeof buf, "%d", (int)lroundf(w.pressure));
-    c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Faint);
-    c.text(Sans9, x + 14, y + 106, WX_IMPERIAL ? "inHg" : "hPa", Align::Left, Tone::Dark, Tone::Faint);
+    c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Whisper);
+    c.text(Sans9, x + 14, y + 106, WX_IMPERIAL ? "inHg" : "hPa", Align::Left, Tone::Dark, Tone::Whisper);
 
     // Sunrise / sunset, with little up/down markers
     tile(c, 0, 1, "Sun", &x, &y);
     fmtClock(small, sizeof small, w.sunrise);
     c.fillTriangle(x + 16, y + 62, x + 30, y + 62, x + 23, y + 52, Tone::Ink);
-    c.text(SansBold14, x + 40, y + 66, small, Align::Left, Tone::Ink, Tone::Faint);
+    c.text(SansBold14, x + 40, y + 66, small, Align::Left, Tone::Ink, Tone::Whisper);
     fmtClock(small, sizeof small, w.sunset);
     c.fillTriangle(x + 16, y + 90, x + 30, y + 90, x + 23, y + 100, Tone::Mid);
-    c.text(SansBold14, x + 40, y + 102, small, Align::Left, Tone::Ink, Tone::Faint);
+    c.text(SansBold14, x + 40, y + 102, small, Align::Left, Tone::Ink, Tone::Whisper);
 
-    // Moon
-    tile(c, 1, 1, "Moon", &x, &y);
-    const char *p1, *p2;
-    moonPhaseName(w.moonPhase, &p1, &p2);
-    c.text(SansBold11, x + 14, y + 70, p1, Align::Left, Tone::Ink, Tone::Faint);
-    c.text(SansBold11, x + 14, y + 96, p2, Align::Left, Tone::Ink, Tone::Faint);
-    drawMoon(c, x + 128, y + 62, 23, w.moonPhase, SOUTHERN_HEMISPHERE);
+    // Moon: the phase name doubles as the caption (top-left, two lines) and the
+    // 75 px photo sits bottom-right, where its round top clears the text.
+    {
+        x = L::tilesX + 1 * (L::tileW + L::tileGap);
+        y = L::tilesY + 1 * (L::tileH + L::tileGap);
+        c.fillRoundRect(x, y, L::tileW, L::tileH, 10, Tone::Whisper);
+        const char *p1, *p2;
+        moonPhaseName(w.moonPhase, &p1, &p2);
+        c.text(Sans9, x + 14, y + 24, p1, Align::Left, Tone::Dark, Tone::Whisper);
+        c.text(SansBold11, x + 14, y + 44, p2, Align::Left, Tone::Ink, Tone::Whisper);
+        drawMoon(c, x + L::tileW - 79, y + L::tileH - 76, w.moonPhase, SOUTHERN_HEMISPHERE);
+    }
 
     // Local probe if one is fitted, otherwise the UV index
     if (!isnan(st.probeTemp)) {
         tile(c, 2, 1, TEMP_PROBE_LABEL, &x, &y);
         snprintf(buf, sizeof buf, "%.1f" DEG, st.probeTemp);
-        c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Faint);
-        c.text(Sans9, x + 14, y + 106, "local sensor", Align::Left, Tone::Dark, Tone::Faint);
+        c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Whisper);
+        c.text(Sans9, x + 14, y + 106, "on the display", Align::Left, Tone::Dark, Tone::Whisper);
     } else {
         tile(c, 2, 1, "UV index", &x, &y);
         snprintf(buf, sizeof buf, "%d", (int)lroundf(w.uvIndex));
-        c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Faint);
-        c.text(Sans9, x + 14, y + 106, uvWord(w.uvIndex), Align::Left, Tone::Dark, Tone::Faint);
+        c.text(SansBold20, x + 14, y + 72, buf, Align::Left, Tone::Ink, Tone::Whisper);
+        c.text(Sans9, x + 14, y + 106, uvWord(w.uvIndex), Align::Left, Tone::Dark, Tone::Whisper);
     }
 }
 
@@ -277,9 +282,11 @@ static void hourlyChart(Canvas &c, const Weather &w) {
         c.text(SansBold11, x, y - 12, buf, Align::Center);
     }
     // Hour ticks every 3 hours
+    // Ticks every 3 hours, labels every 6 (the chart is too narrow for more)
     for (int i = 0; i < n; i += 3) {
         int x = left + (int)(i * step + step / 2);
         c.vline(x, bottom, 5, Tone::Mid);
+        if (i % 6) continue;
         if (i == 0) snprintf(buf, sizeof buf, "Now");
         else fmtHourTick(buf, sizeof buf, w.hours[i].at);
         c.text(Sans9, x, bottom + 24, buf, Align::Center, Tone::Dark);
@@ -299,7 +306,7 @@ static void outlook(Canvas &c, const Weather &w) {
         localtime_r(&d.at, &tm);
         static const char *wd[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
         c.text(SansBold11, cx, L::splitY + 34, wd[tm.tm_wday], Align::Center);
-        drawSkyIcon(c, cx, L::splitY + 84, 58, d.sky, false);
+        drawSkyIcon(c, cx, L::splitY + 84, 54, d.sky, false);
 
         char buf[16];
         fmtTemp(buf, sizeof buf, d.high);

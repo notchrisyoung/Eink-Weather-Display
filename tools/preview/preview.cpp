@@ -17,15 +17,16 @@ static Weather sample(time_t now) {
     w.todayLow = 63; w.todayHigh = 81;
     w.sunrise = now - 4 * 3600 + 9 * 60;
     w.sunset = now + 8 * 3600 - 3 * 60;
-    w.moonPhase = 0.36f;
+    w.moonPhase = 0.14f;   // waxing crescent - the widest phase name
     w.hourCount = Weather::kHours;
     for (int i = 0; i < w.hourCount; i++) {
         w.hours[i].at = now + i * 3600;
         w.hours[i].temp = 72 + 9 * sinf((i - 1) * 3.14159f / 12.0f) - (i > 14 ? (i - 14) * 0.8f : 0);
         w.hours[i].rainChance = (i >= 8 && i <= 13) ? 0.15f + 0.1f * (i - 8) : 0;
     }
-    const Sky skies[4] = { Sky::Rain, Sky::Clouds, Sky::Clear, Sky::Storm };
-    const float hi[4] = { 77, 79, 84, 80 }, lo[4] = { 61, 60, 64, 66 }, rain[4] = { 0.6f, 0.2f, 0, 0.4f };
+    const Sky skies[7] = { Sky::Rain, Sky::Clouds, Sky::Clear, Sky::Storm, Sky::FewClouds, Sky::Fog, Sky::Clear };
+    const float hi[7] = { 77, 79, 84, 80, 76, 71, 74 }, lo[7] = { 61, 60, 64, 66, 59, 57, 58 };
+    const float rain[7] = { 0.6f, 0.2f, 0, 0.4f, 0.1f, 0, 0 };
     w.dayCount = Weather::kDays;
     for (int i = 0; i < w.dayCount; i++)
         w.days[i] = { now + (i + 1) * 86400, lo[i], hi[i], rain[i], skies[i] };
