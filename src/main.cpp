@@ -77,7 +77,11 @@ void setup() {
         } else {
             Canvas canvas(fb);
             if (haveForecast) drawWeatherScreen(canvas, lastForecast, st);
-            else drawMessageScreen(canvas, "Waiting for weather", "Check Wi-Fi and the API key, retrying in a few minutes");
+            else {
+                const char *why = !online ? "No Wi-Fi - check the network name and password"
+                                          : (*owm::lastError() ? owm::lastError() : "Weather download failed");
+                drawMessageScreen(canvas, "Waiting for weather", why);
+            }
 
             // Compare against what's already showing, ignoring the update stamp.
             uint32_t sum = crc32_le(0, fb, kFrameBytes);

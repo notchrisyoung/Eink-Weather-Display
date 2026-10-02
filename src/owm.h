@@ -7,4 +7,6 @@ namespace owm {
 // If `serverTime` is given it receives the server's UTC clock from the HTTP
 // Date header (0 if unavailable), even when the forecast itself fails.
 bool fetch(Weather &out, time_t *serverTime);
+// Short human-readable reason the last fetch failed ("" after a success).
+const char *lastError();
 }

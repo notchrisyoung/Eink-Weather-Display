@@ -10,6 +10,9 @@
 
 namespace owm {
 
+static char lastErr[64] = "";
+const char *lastError() { return lastErr; }
+
 static String requestUrl() {
     String url = "https://api.openweathermap.org/data/3.0/onecall?lat=";
     url += WX_LATITUDE;
@@ -125,6 +128,7 @@ bool fetch(Weather &out, time_t *serverTime) {
     http.setTimeout(15000);
     if (!http.begin(tls, requestUrl())) {
         Serial.println("[owm] could not start request");
+        strlcpy(lastErr, "Could not reach the weather server", sizeof lastErr);
         return false;
     }
     const char *wanted[] = { "Date" };
@@ -134,7 +138,16 @@ bool fetch(Weather &out, time_t *serverTime) {
     if (serverTime && status > 0) *serverTime = parseHttpDate(http.header("Date"));
     if (status != HTTP_CODE_OK) {
         Serial.printf("[owm] HTTP %d %s\n", status, status < 0 ? http.errorToString(status).c_str() : "");
-        if (status == 401) Serial.println("[owm] check the API key and that One Call 3.0 is enabled");
+        if (status == 401) {
+            Serial.println("[owm] check the API key and that One Call 3.0 is enabled");
+            strlcpy(lastErr, "API key rejected - does it have One Call 3.0?", sizeof lastErr);
+        } else if (status == 429) {
+            strlcpy(lastErr, "Too many requests - daily API limit reached", sizeof lastErr);
+        } else if (status < 0) {
+            strlcpy(lastErr, "Could not reach the weather server", sizeof lastErr);
+        } else {
+            snprintf(lastErr, sizeof lastErr, "Weather server error (HTTP %d)", status);
+        }
         http.end();
         return false;
     }
@@ -146,13 +159,16 @@ bool fetch(Weather &out, time_t *serverTime) {
     http.end();
     if (err) {
         Serial.printf("[owm] JSON error: %s\n", err.c_str());
+        strlcpy(lastErr, "Weather data was incomplete", sizeof lastErr);
         return false;
     }
     if (!doc["current"].is<JsonObject>()) {
         Serial.println("[owm] response had no current conditions");
+        strlcpy(lastErr, "Weather data was incomplete", sizeof lastErr);
         return false;
     }
 
+    lastErr[0] = 0;
     Weather w = {};
     decode(doc, w);
     out = w;
