@@ -1,63 +1,70 @@
 # E-Ink Weather Display
 
-A battery-powered weather station display built on the **LilyGo T5 4.7" e-paper board** (ESP32 + 960x540 EPD). It wakes up every 15 minutes, pulls current conditions and a 3-hour-step forecast from OpenWeatherMap, draws everything to the e-ink panel, then goes back into deep sleep. Because e-paper holds its image with no power, the display stays readable between updates while the board draws almost nothing.
+A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ESP32 + 960x540, 16-level greyscale). Every 15 minutes it wakes up, pulls the forecast from OpenWeatherMap, reads a local temperature probe, redraws the panel, and goes back into deep sleep. E-paper keeps its image with no power, so the display stays readable between updates while the board draws almost nothing.
 
-<!-- PHOTOS: add a photo of the finished display here, e.g. ![Weather display](docs/photo.jpg) -->
+![Dashboard preview](docs/preview.png)
 
-## What it shows
+*Rendered from the firmware's own drawing code with sample data. See [tools/preview](tools/preview).*
 
-- City, date, time of last update, and a **local temperature reading** from a DS18B20 probe wired to the board
-- Current temperature, conditions text and a large weather icon
-- Wind speed and direction on a compass rose
-- Sunrise/sunset times and the current moon phase, shown over a moon photo (`moon.h`)
-- Forecast boxes for the next several 3-hour periods, with small icons
-- Wi-Fi signal strength and battery level
+<!-- PHOTOS: add a photo of the finished display here, e.g. ![On the wall](docs/photo.jpg) -->
+
+## What's on the screen
+
+- **Header:** place name, date, time of the last update, Wi-Fi signal and battery level
+- **Now:** a large condition icon, the temperature, "feels like", a description, and today's high and low
+- **Detail tiles:**
+  - Wind speed and direction on a compass, with gusts
+  - Humidity
+  - Pressure
+  - Sunrise and sunset
+  - Moon phase, drawn to match tonight's moon
+  - Your local probe, or the UV index if no probe is fitted
+- **Next 24 hours:** temperature curve over hourly chance-of-rain columns, with the warmest hour marked
+- **Next 4 days:** icon, high, low and chance of rain
+
+## Behaviour
+
+- Updates on the clock at :00, :15, :30 and :45 (`UPDATE_EVERY_MIN`).
+- **Quiet hours:** no updates from 23:30 to 06:00 (`QUIET_FROM_MIN` / `QUIET_UNTIL_MIN`), to save battery.
+- **If an update fails** (Wi-Fi down, API error), the last good forecast is redrawn from RTC memory with an "Offline" note. It then retries after 5, 10, 20… minutes, and doesn't redraw again until it succeeds.
+- Wi-Fi is switched off before the slow panel refresh.
 
 ## Hardware
 
 | Part | Notes |
 |---|---|
-| LilyGo T5 4.7" EPD (ESP32, PSRAM) | Uses the [LilyGo-EPD47](https://github.com/Xinyuan-LilyGO/LilyGo-EPD47) driver |
-| DS18B20 temperature sensor | Data on **GPIO 15** (`ONE_WIRE_BUS`), with the usual 4.7k pull-up |
-| LiPo battery | Read on GPIO 36 by `BatteryVoltage.cpp` |
-
-## Power behaviour
-
-- Normal updates every **15 minutes** (`SleepDuration`), aligned to the clock (:00, :15, :30, :45).
-- From **23:30 to 06:00** (`LongSleepStart` / `LongSleepEnd`) it skips updates entirely and sleeps through the night.
-- Wi-Fi is switched off before the panel is drawn to save power.
+| LilyGo T5 4.7" (ESP32-WROVER, PSRAM) | The framebuffer lives in PSRAM |
+| DS18B20 temperature probe (optional) | Data on **GPIO 15** with a 4.7k pull-up to 3V3. Without it, the tile shows UV index instead. |
+| 1-cell LiPo | Read through the board's divider on **GPIO 36** |
 
 ## Setup
 
-1. Install the Arduino IDE with the **ESP32 board package**, and select a board with PSRAM enabled (e.g. *ESP32 Dev Module*, PSRAM: Enabled).
-2. Install the libraries:
-   - [LilyGo-EPD47](https://github.com/Xinyuan-LilyGO/LilyGo-EPD47)
-   - ArduinoJson
-   - OneWire
-   - DallasTemperature
-3. Edit `owm_credentials.h`:
-   - `ssid` / `password`: your Wi-Fi
-   - `apikey`: a free key from [openweathermap.org](https://openweathermap.org/)
-   - `Lat`, `Lon`, `City`, `Country`, `Units`, `Timezone`
-4. Open `OWM_EPD47_epaper_v2.5.ino` and upload.
+1. Install [PlatformIO](https://platformio.org/) (the VS Code extension is easiest).
+2. Get an [OpenWeatherMap](https://openweathermap.org/api/one-call-3) API key and subscribe it to **One Call API 3.0**. The free tier includes 1,000 calls a day, and this display uses about 70.
+3. Copy `include/secrets.example.h` to `include/secrets.h`, then fill in your Wi-Fi details and API key. `secrets.h` is gitignored.
+4. Edit `include/config.h`:
+   - Latitude, longitude and place name
+   - Units (imperial or metric) and POSIX time zone
+   - 12/24-hour clock, update interval and quiet hours
+5. `pio run -t upload`, then `pio device monitor` to watch the log.
 
-> **Heads-up:** the sketch requests OpenWeatherMap's `onecall` endpoint. OWM has retired One Call 2.5 for new keys, so a new key may need a (free-tier) **One Call 3.0** subscription, and the request URL updated to match.
+## Project layout
 
-> **Don't commit your real Wi-Fi password or API key.** Keep them only in your local copy of `owm_credentials.h`.
-
-## Files
-
-| File | Purpose |
+| Path | What it does |
 |---|---|
-| `OWM_EPD47_epaper_v2.5.ino` | Main sketch: Wi-Fi, weather fetch/decode, drawing, deep sleep |
-| `owm_credentials.h` | Wi-Fi, API key, location and time-zone settings |
-| `forecast_record.h` | Struct holding decoded weather data |
-| `lang.h` | Display text strings |
-| `moon.h` | Moon phase helpers |
-| `BatteryVoltage.cpp/.h` | Battery voltage / charge-level reading |
-| `opensans*.h` | Fonts used by the sketch |
-| `Font Files/` | Larger set of pre-converted Open Sans fonts in other sizes |
+| `src/main.cpp` | Wake → connect → fetch → draw → sleep, plus offline fallback |
+| `src/owm.*` | One Call 3.0 request, streamed and filtered JSON parsing |
+| `src/weather.h` | Forecast data model and condition-code mapping |
+| `src/screen.*` | Dashboard layout |
+| `src/icons.*` | Weather icons, moon, wind dial, status glyphs (all drawn in code) |
+| `src/canvas.*` | Drawing layer over the e-paper framebuffer |
+| `src/net.*` | Wi-Fi and NTP time |
+| `src/power.*` | Battery voltage, sleep scheduling |
+| `src/probe.*` | DS18B20 reading |
+| `src/fonts/` | Generated Open Sans bitmap fonts |
+| `tools/make_fonts.py` | Regenerates `src/fonts/` from the TTFs in `assets/fonts/` |
+| `tools/preview/` | Renders the layout to a PNG on a PC |
 
 ## Credits
 
-Based on David Bird's (G6EJD) ESP32 OpenWeatherMap e-paper weather display for the LilyGo 4.7" EPD. His original copyright notice is kept in the sketch header and applies to that code. This version is modified from his, for example with the DS18B20 local temperature reading in the header line.
+Inspired by the many ESP32 e-paper weather displays in the maker community. Uses the [LilyGo EPD47](https://github.com/Xinyuan-LilyGO/LilyGo-EPD47) driver, [ArduinoJson](https://arduinojson.org/), the OneWire and DallasTemperature libraries, and weather data from [OpenWeatherMap](https://openweathermap.org/). The fonts are generated from [Open Sans](https://fonts.google.com/specimen/Open+Sans), which is under the SIL Open Font License (`assets/fonts/OFL.txt`).

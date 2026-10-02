@@ -1,0 +1,218 @@
+#include "icons.h"
+#include <math.h>
+
+static const float kPi = 3.14159265f;
+
+// ---------------------------------------------------------------------------
+// Building blocks. Everything is scaled from a unit `s` = size / 100 so the
+// same art works for the 150 px "now" icon and the 56 px forecast icons.
+// ---------------------------------------------------------------------------
+
+// A puffy cloud: three bumps on a flat-bottomed base. Drawn as an ink
+// silhouette and then refilled `inset` pixels in, which leaves an outline.
+static void cloudShape(Canvas &c, int cx, int cy, float s, int inset, uint8_t tone) {
+    struct Bump { float x, y, r; };
+    const Bump bumps[] = { {-24, 6, 17}, {-3, -9, 24}, {22, 3, 18} };
+    for (const Bump &b : bumps)
+        c.fillCircle(cx + lroundf(b.x * s), cy + lroundf(b.y * s), lroundf(b.r * s) - inset, tone);
+    int left = cx + lroundf(-24 * s), right = cx + lroundf(22 * s);
+    int top = cy + lroundf(4 * s), bottom = cy + lroundf(21 * s);
+    c.fillRect(left, top, right - left, bottom - top - inset, tone);
+}
+
+static void cloud(Canvas &c, int cx, int cy, float s, uint8_t fill) {
+    int edge = s > 0.8f ? 4 : 2;
+    cloudShape(c, cx, cy, s, 0, Tone::Ink);
+    cloudShape(c, cx, cy, s, edge, fill);
+}
+
+static void sun(Canvas &c, int cx, int cy, float s) {
+    int r = lroundf(15 * s);
+    int thick = s > 0.8f ? 5 : 2;
+    for (int i = 0; i < 8; i++) {
+        float a = i * kPi / 4;
+        int x0 = cx + lroundf(cosf(a) * 23 * s), y0 = cy + lroundf(sinf(a) * 23 * s);
+        int x1 = cx + lroundf(cosf(a) * 33 * s), y1 = cy + lroundf(sinf(a) * 33 * s);
+        c.line(x0, y0, x1, y1, Tone::Ink, thick);
+    }
+    c.fillCircle(cx, cy, r, Tone::Ink);
+    c.fillCircle(cx, cy, r - thick, Tone::Faint);
+}
+
+static void crescent(Canvas &c, int cx, int cy, float s, uint8_t behind) {
+    int r = lroundf(20 * s);
+    c.fillCircle(cx, cy, r, Tone::Ink);
+    c.fillCircle(cx, cy, r - (s > 0.8f ? 4 : 2), Tone::Faint);
+    c.fillCircle(cx + lroundf(11 * s), cy - lroundf(8 * s), lroundf(17 * s), behind);
+}
+
+static void rainStreaks(Canvas &c, int cx, int top, float s, int count, int thick) {
+    for (int i = 0; i < count; i++) {
+        int x = cx + lroundf((-18 + i * 36.0f / (count - 1 > 0 ? count - 1 : 1)) * s);
+        c.line(x, top, x - lroundf(6 * s), top + lroundf(14 * s), Tone::Ink, thick);
+    }
+}
+
+static void drizzleDots(Canvas &c, int cx, int top, float s) {
+    for (int i = 0; i < 3; i++) {
+        int x = cx + lroundf((-16 + i * 16) * s);
+        c.fillCircle(x, top + lroundf((i % 2 ? 10 : 4) * s), lroundf(3 * s) + 1, Tone::Ink);
+    }
+}
+
+static void flake(Canvas &c, int cx, int cy, float s) {
+    int r = lroundf(7 * s) + 1;
+    int t = s > 0.8f ? 2 : 1;
+    for (int i = 0; i < 3; i++) {
+        float a = i * kPi / 3;
+        c.line(cx - lroundf(cosf(a) * r), cy - lroundf(sinf(a) * r),
+               cx + lroundf(cosf(a) * r), cy + lroundf(sinf(a) * r), Tone::Ink, t);
+    }
+}
+
+static void bolt(Canvas &c, int cx, int top, float s) {
+    auto P = [&](float x, float y, int &ox, int &oy) { ox = cx + lroundf(x * s); oy = top + lroundf(y * s); };
+    int ax, ay, bx, by, cx2, cy2, dx, dy, ex, ey, fx, fy;
+    P(2, -4, ax, ay); P(-10, 14, bx, by); P(0, 14, cx2, cy2);
+    P(-6, 30, dx, dy); P(12, 8, ex, ey); P(2, 8, fx, fy);
+    c.fillTriangle(ax, ay, bx, by, cx2, cy2, Tone::Ink);
+    c.fillTriangle(ax, ay, cx2, cy2, fx, fy, Tone::Ink);
+    c.fillTriangle(fx, fy, ex, ey, dx, dy, Tone::Ink);
+    c.fillTriangle(cx2, cy2, fx, fy, dx, dy, Tone::Ink);
+}
+
+static void fogBands(Canvas &c, int cx, int cy, float s) {
+    int t = s > 0.8f ? 5 : 2;
+    const float rows[][2] = { {-30, 22}, {-22, 30}, {-34, 18}, {-18, 32} };
+    for (int i = 0; i < 4; i++) {
+        int y = cy + lroundf((-15 + i * 10) * s);
+        c.line(cx + lroundf(rows[i][0] * s), y, cx + lroundf(rows[i][1] * s), y,
+               i % 2 ? Tone::Mid : Tone::Ink, t);
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night) {
+    float s = size / 100.0f;
+    int t = s > 0.8f ? 4 : 2;
+    switch (sky) {
+    case Sky::Clear:
+        if (night) crescent(c, cx, cy, s * 1.4f, Tone::Paper);
+        else sun(c, cx, cy, s * 1.25f);
+        break;
+    case Sky::FewClouds:
+        if (night) crescent(c, cx + lroundf(14 * s), cy - lroundf(14 * s), s, Tone::Paper);
+        else sun(c, cx + lroundf(14 * s), cy - lroundf(14 * s), s);
+        cloud(c, cx - lroundf(4 * s), cy + lroundf(10 * s), s * 0.95f, Tone::Paper);
+        break;
+    case Sky::Clouds:
+        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Soft);
+        cloud(c, cx - lroundf(6 * s), cy + lroundf(8 * s), s, Tone::Paper);
+        break;
+    case Sky::Overcast:
+        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Mid);
+        cloud(c, cx - lroundf(6 * s), cy + lroundf(8 * s), s, Tone::Soft);
+        break;
+    case Sky::Drizzle:
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Faint);
+        drizzleDots(c, cx, cy + lroundf(16 * s), s);
+        break;
+    case Sky::Rain:
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Soft);
+        rainStreaks(c, cx, cy + lroundf(16 * s), s, 4, t);
+        break;
+    case Sky::Storm:
+        cloud(c, cx, cy - lroundf(14 * s), s, Tone::Mid);
+        bolt(c, cx, cy + lroundf(10 * s), s);
+        break;
+    case Sky::Snow:
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Faint);
+        flake(c, cx - lroundf(16 * s), cy + lroundf(22 * s), s);
+        flake(c, cx + lroundf(2 * s), cy + lroundf(32 * s), s);
+        flake(c, cx + lroundf(20 * s), cy + lroundf(20 * s), s);
+        break;
+    case Sky::Sleet:
+        cloud(c, cx, cy - lroundf(12 * s), s, Tone::Soft);
+        rainStreaks(c, cx - lroundf(8 * s), cy + lroundf(16 * s), s, 2, t);
+        flake(c, cx + lroundf(18 * s), cy + lroundf(26 * s), s);
+        break;
+    case Sky::Fog:
+        fogBands(c, cx, cy, s);
+        break;
+    }
+}
+
+void drawMoon(Canvas &c, int cx, int cy, int r, float phase, bool southern) {
+    // Light grey "maria" patches make it read as the moon rather than a ball.
+    struct Spot { float x, y, r; };
+    const Spot maria[] = { {-0.30f, -0.25f, 0.28f}, {0.15f, -0.35f, 0.20f},
+                           {0.25f, 0.10f, 0.24f}, {-0.15f, 0.30f, 0.18f} };
+    float cosT = cosf(2 * kPi * phase);
+    bool waxing = phase < 0.5f;
+    for (int dy = -r; dy <= r; dy++) {
+        float half = sqrtf((float)(r * r - dy * dy));
+        float edge = half * cosT;           // terminator position on this row
+        for (int dx = -(int)half; dx <= (int)half; dx++) {
+            float x = southern ? -dx : dx;
+            bool lit = waxing ? (x >= edge) : (x <= -edge);
+            uint8_t tone;
+            if (!lit) tone = Tone::Dark;
+            else {
+                tone = Tone::Faint;
+                for (const Spot &m : maria) {
+                    float mx = dx / (float)r - m.x, my = dy / (float)r - m.y;
+                    if (mx * mx + my * my < m.r * m.r) { tone = Tone::Soft; break; }
+                }
+            }
+            c.pixel(cx + dx, cy + dy, tone);
+        }
+    }
+    c.circle(cx, cy, r, Tone::Ink);
+}
+
+void drawWifiBars(Canvas &c, int x, int baseline, int rssi, uint8_t tone, uint8_t off) {
+    int bars = rssi == 0 ? 0 : rssi > -55 ? 4 : rssi > -65 ? 3 : rssi > -75 ? 2 : 1;
+    for (int i = 0; i < 4; i++) {
+        int h = 5 + i * 4;
+        c.fillRect(x + i * 6, baseline - h, 4, h, i < bars ? tone : off);
+    }
+}
+
+void drawBattery(Canvas &c, int x, int y, int percent, uint8_t tone) {
+    const int w = 34, h = 16;
+    c.rect(x, y, w, h, tone);
+    c.rect(x + 1, y + 1, w - 2, h - 2, tone);
+    c.fillRect(x + w, y + 5, 3, h - 10, tone);
+    if (percent < 0) return;
+    int fill = (w - 6) * (percent > 100 ? 100 : percent) / 100;
+    c.fillRect(x + 3, y + 3, fill, h - 6, tone);
+}
+
+void drawWindDial(Canvas &c, int cx, int cy, int r, float fromDegrees) {
+    c.ring(cx, cy, r, 2, Tone::Mid);
+    for (int i = 0; i < 16; i++) {
+        float a = i * kPi / 8;
+        int len = (i % 4 == 0) ? 7 : 3;
+        c.line(cx + lroundf(sinf(a) * r), cy - lroundf(cosf(a) * r),
+               cx + lroundf(sinf(a) * (r - len)), cy - lroundf(cosf(a) * (r - len)),
+               Tone::Mid, i % 4 == 0 ? 2 : 1);
+    }
+    // Arrow flies downwind: tail at the "from" side, head at the opposite side.
+    float a = fromDegrees * kPi / 180.0f;
+    float ux = sinf(a), uy = -cosf(a);
+    int tailX = cx + lroundf(ux * (r - 10)), tailY = cy + lroundf(uy * (r - 10));
+    int tipX = cx - lroundf(ux * (r - 6)), tipY = cy - lroundf(uy * (r - 6));
+    c.line(tailX, tailY, cx - lroundf(ux * (r - 18)), cy - lroundf(uy * (r - 18)), Tone::Ink, 3);
+    float px = -uy, py = ux;   // perpendicular
+    int baseX = cx - lroundf(ux * (r - 22)), baseY = cy - lroundf(uy * (r - 22));
+    c.fillTriangle(tipX, tipY, baseX + lroundf(px * 8), baseY + lroundf(py * 8),
+                   baseX - lroundf(px * 8), baseY - lroundf(py * 8), Tone::Ink);
+    c.fillCircle(tailX, tailY, 4, Tone::Ink);
+}
+
+void drawDrop(Canvas &c, int cx, int cy, int h, uint8_t tone) {
+    int r = h / 3;
+    c.fillCircle(cx, cy + h / 2 - r, r, tone);
+    c.fillTriangle(cx, cy - h / 2, cx - r, cy + h / 2 - r, cx + r, cy + h / 2 - r, tone);
+}
