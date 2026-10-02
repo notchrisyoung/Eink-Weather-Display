@@ -113,16 +113,19 @@ static void header(Canvas &c, const Weather &w, const DeviceStatus &st) {
     static const char *days[7] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
     static const char *months[12] = { "January", "February", "March", "April", "May", "June", "July",
                                       "August", "September", "October", "November", "December" };
-    // The date follows the place name and uses the longest form that fits
-    // before the space kept for the update stamp ("Offline since 12:59 PM").
-    int dateX = nameEnd + 28;
-    int room = batteryBlockLeft(c, st) - 14 - 22 - 12 - c.textWidth(Sans11, "Offline since 12:59 PM") - 24 - dateX;
+    // The date is centred, using the longest form that stays clear of the place
+    // name on the left and the update stamp on the right (widest: "Offline 12:59 PM").
+    const int mid = Canvas::W / 2, gap = 24;
+    int stampLeft = batteryBlockLeft(c, st) - 14 - 22 - 12 - c.textWidth(Sans11, "Offline 12:59 PM");
+    int halfRoom = mid - (nameEnd + gap);
+    if (stampLeft - gap - mid < halfRoom) halfRoom = stampLeft - gap - mid;
+    int room = 2 * halfRoom;
     snprintf(buf, sizeof buf, "%s, %s %d", days[tm.tm_wday], months[tm.tm_mon], tm.tm_mday);
     if (c.textWidth(SansBold14, buf) > room)
         snprintf(buf, sizeof buf, "%s, %.3s %d", days[tm.tm_wday], months[tm.tm_mon], tm.tm_mday);
     if (c.textWidth(SansBold14, buf) > room)
         snprintf(buf, sizeof buf, "%.3s, %.3s %d", days[tm.tm_wday], months[tm.tm_mon], tm.tm_mday);
-    c.text(SansBold14, dateX, 37, buf, Align::Left, kBarText, kBarBg);
+    c.text(SansBold14, mid, 37, buf, Align::Center, kBarText, kBarBg);
 
     // Battery sits at the far right; the update stamp (drawn separately) goes left of it.
     int pct = batteryPercent(st.batteryVolts);
@@ -358,8 +361,8 @@ void drawUpdateStamp(Canvas &c, const Weather &w, const DeviceStatus &st) {
     drawWifiBars(c, x, 35, st.wifiRssi, kBarText, kBarOff);
     char when[16], buf[48];
     fmtClock(when, sizeof when, w.observedAt);
-    if (st.fresh) snprintf(buf, sizeof buf, "Updated %s", when);
-    else          snprintf(buf, sizeof buf, "Offline since %s", when);
+    if (st.fresh) snprintf(buf, sizeof buf, "%s", when);
+    else          snprintf(buf, sizeof buf, "Offline %s", when);
     c.text(Sans11, x - 12, 33, buf, Align::Right, kBarText, kBarBg);
 }
 

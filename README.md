@@ -25,7 +25,7 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 ## Behaviour
 
 - **Schedule:** every 15 minutes from 06:00 to 16:45, every 30 minutes from 17:00 to 22:00, then asleep until 06:00. That's about 55 updates a day. Change `UPDATE_WINDOWS` in `config.h` to adjust.
-- **Only refreshes when something changed.** Each wake draws the new screen in memory and compares it with what's already on the panel. If only the update time would differ, the panel is left alone, saving the refresh. So "Updated" shows when the display last changed.
+- **Only refreshes when something changed.** Each wake draws the new screen in memory and compares it with what's already on the panel. If only the update time would differ, the panel is left alone, saving the refresh. So the time in the header shows when the display last changed.
 - **Fast wake:** Wi-Fi reconnects using the access point's channel and BSSID saved from the last wake, skipping the scan. A fixed IP can also skip DHCP (optional, in `config.h`). The clock is set from the weather server's response, so there's no separate time sync.
 - **If an update fails** (Wi-Fi down, API error), the last good forecast is redrawn from RTC memory with an "Offline" note. It then retries after 5, 10, 20… minutes during the day, and waits for the morning at night.
 - **Battery reading** is taken right after waking, before Wi-Fi loads the battery. It's the median of 31 samples, smoothed across wakes and shown in 5% steps. For best accuracy, calibrate it against a multimeter with `BATTERY_CALIBRATION`.

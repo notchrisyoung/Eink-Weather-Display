@@ -6,7 +6,7 @@
 // 24-hour chart and the next four days. Everything except the update stamp.
 void drawWeatherScreen(Canvas &c, const Weather &w, const DeviceStatus &st);
 
-// "Updated 10:15 AM" and the Wi-Fi bars in the header. Kept separate so the
+// The update time ("10:15 AM") and the Wi-Fi bars in the header. Kept separate so the
 // firmware can tell whether anything *else* changed before refreshing the panel.
 void drawUpdateStamp(Canvas &c, const Weather &w, const DeviceStatus &st);
 
