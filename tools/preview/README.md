@@ -9,9 +9,11 @@ Linux / macOS / WSL:
 ```bash
 pio pkg install            # once, downloads the EPD47 headers
 pip install pillow
-tools/preview/build.sh     # writes docs/preview.png
+tools/preview/build.sh     # writes docs/screenshots/*.png
 ```
 
 `host_epd.cpp` stands in for the few display-driver functions the screen code
-calls (pixels and text). To see the other states, run the built binary
-yourself, e.g. `tools/preview/out/preview out.pgm --offline --no-probe`.
+calls (pixels and text). The script renders four states: the normal
+dashboard, a night view without the probe (`--night --no-probe`), the
+offline note (`--offline`) and the "Waiting for weather" screen
+(`--message`). Combine the flags yourself with `tools/preview/out/preview out.pgm ...`.

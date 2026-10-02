@@ -45,12 +45,32 @@ int main(int argc, char **argv) {
     Canvas c(fb.data());
     Weather w = sample(now);
     DeviceStatus st = { now, true, -58, 3.98f, 68.4f };
+    bool message = false;
     for (int i = 2; i < argc; i++) {
         if (!strcmp(argv[i], "--offline")) st.fresh = false;
         if (!strcmp(argv[i], "--no-probe")) st.probeTemp = NAN;
+        if (!strcmp(argv[i], "--message")) message = true;
+        if (!strcmp(argv[i], "--night")) {
+            // 9:30 PM, clear and cooler, nearly full moon
+            w.observedAt = st.now = now + 11 * 3600 + 15 * 60;
+            w.sky = Sky::Clear; w.isNight = true; strcpy(w.condition, "clear sky");
+            w.temp = 61.3f; w.feelsLike = 60.2f; w.humidity = 58; w.moonPhase = 0.46f;
+            w.windSpeed = 3.1f; w.windGust = 0; w.uvIndex = 0;
+            for (int h = 0; h < w.hourCount; h++) {
+                w.hours[h].at += 11 * 3600;
+                float hourOfDay = fmodf(21.5f + h, 24.0f);   // coolest ~5 AM, warmest ~3 PM
+                w.hours[h].temp = 68 - 12 * cosf((hourOfDay - 3.0f) * 3.14159f / 12.0f);
+                w.hours[h].rainChance = 0;
+            }
+            st.batteryVolts = 3.81f;
+        }
     }
-    drawWeatherScreen(c, w, st);
-    drawUpdateStamp(c, w, st);
+    if (message) {
+        drawMessageScreen(c, "Waiting for weather", "API key rejected - does it have One Call 3.0?");
+    } else {
+        drawWeatherScreen(c, w, st);
+        drawUpdateStamp(c, w, st);
+    }
 
     FILE *f = fopen(out, "wb");
     fprintf(f, "P5\n%d %d\n255\n", EPD_WIDTH, EPD_HEIGHT);

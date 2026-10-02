@@ -2,9 +2,18 @@
 
 A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ESP32 + 960x540, 16-level greyscale). Every 15 minutes it wakes up, pulls the forecast from OpenWeatherMap, reads a local temperature probe, redraws the panel, and goes back into deep sleep. E-paper keeps its image with no power, so the display stays readable between updates while the board draws almost nothing.
 
-![Dashboard preview](docs/preview.png)
+![Dashboard](docs/screenshots/dashboard.png)
 
-*Rendered from the firmware's own drawing code with sample data. See [tools/preview](tools/preview).*
+## Screenshots
+
+Rendered from the firmware's own drawing code with sample data (see [tools/preview](tools/preview)), so they match what the panel draws.
+
+| | |
+|---|---|
+| ![Daytime dashboard](docs/screenshots/dashboard.png) | ![Night, no probe](docs/screenshots/night.png) |
+| **Daytime:** current conditions, detail tiles, 24-hour chart and 7-day outlook | **Night:** moon icon for clear skies, nearly full moon, and the UV tile when no probe is fitted |
+| ![Offline](docs/screenshots/offline.png) | ![Waiting for weather](docs/screenshots/waiting.png) |
+| **Offline:** an update failed, so the last good forecast is kept and the header says when it's from | **First boot with no forecast yet:** shows why, e.g. a rejected API key or no Wi-Fi |
 
 <!-- PHOTOS: add a photo of the finished display here, e.g. ![On the wall](docs/photo.jpg) -->
 
@@ -41,11 +50,11 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 ## Setup
 
 1. Install [PlatformIO](https://platformio.org/) (the VS Code extension is easiest).
-2. Get an [OpenWeatherMap](https://openweathermap.org/api/one-call-3) API key and subscribe it to **One Call API 3.0**. The free tier includes 1,000 calls a day, and this display uses about 70.
+2. Get an [OpenWeatherMap](https://openweathermap.org/api/one-call-3) API key and subscribe it to **One Call API 3.0**. The free tier includes 1,000 calls a day, and this display uses about 55.
 3. Copy `include/secrets.example.h` to `include/secrets.h`, then fill in your Wi-Fi details, API key and location. `secrets.h` is gitignored, so none of these end up on GitHub.
 4. Edit `include/config.h`:
    - Units (imperial or metric)
-   - 12/24-hour clock, update interval and quiet hours
+   - 12/24-hour clock, header style and update schedule
 5. `pio run -t upload`, then `pio device monitor` to watch the log.
 
 ## Project layout
@@ -64,7 +73,7 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 | `src/probe.*` | DS18B20 reading |
 | `src/fonts/` | Generated Open Sans bitmap fonts |
 | `tools/make_fonts.py` | Regenerates `src/fonts/` from the TTFs in `assets/fonts/` |
-| `tools/preview/` | Renders the layout to a PNG on a PC |
+| `tools/preview/` | Renders the screenshots on a PC |
 
 ## Credits
 
