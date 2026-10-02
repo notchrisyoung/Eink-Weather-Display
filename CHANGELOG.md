@@ -48,9 +48,9 @@ A ground-up rewrite. Nothing from v1's code was carried over: new firmware, new 
 - Units, 12/24-hour clock, header style, schedule, pins and battery calibration are all set in `include/config.h`.
 - `tools/preview/` renders the screen layout on a PC, so the layout can be checked without flashing. It also produces the README screenshots.
 
-## v1 (June 2024)
+## v1 (April 2021)
 
-The first version was an Arduino IDE sketch based on David Bird's (G6EJD) LilyGo 4.7" OpenWeatherMap weather display, which inspired this project. His original copyright notice is kept with that code, at the `v1.0` tag.
+Finished on **April 7, 2021** and running since then; it was added to GitHub in June 2024. The first version was an Arduino IDE sketch based on David Bird's (G6EJD) LilyGo 4.7" OpenWeatherMap weather display, which inspired this project. His original copyright notice is kept with that code, at the `v1.0` tag.
 
 ![v1](docs/photos/v1.jpg)
 

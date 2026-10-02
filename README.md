@@ -4,7 +4,7 @@ A battery-powered weather dashboard for the **LilyGo T5 4.7" e-paper board** (ES
 
 ![The display on a desk](docs/photos/display.jpg)
 
-Version 2.0.0. See the [changelog](CHANGELOG.md) for what changed from v1, including a side-by-side photo.
+First built in April 2021 and rewritten as version 2.0.0 in October 2026. See the [changelog](CHANGELOG.md) for the project's history and what changed from v1, including a side-by-side photo.
 
 ## Screenshots
 
