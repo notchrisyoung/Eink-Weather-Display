@@ -64,3 +64,25 @@ The first version was an Arduino IDE sketch based on David Bird's (G6EJD) LilyGo
   - Four 7-day graphs: pressure, temperature, humidity and rainfall
 - **Header:** inside temperature from a DS18B20 probe, plus battery percentage and voltage.
 - **Updates:** every 15 minutes, with no updates from 23:30 to 06:00.
+
+### What v1 changed from the original sketch
+
+- **Weather data:**
+  - Switched from two requests looked up by city name (current weather plus a 3-hourly forecast) to a single One Call request by latitude and longitude.
+  - Rewrote the data decoding to match.
+- **Forecast:** the forecast row shows 7 days with day names, highs and lows, instead of 3-hourly forecast boxes.
+- **Graphs:** pressure, temperature, humidity and rainfall cover the next 7 days of daily values, instead of 3-hourly readings. The temperature graph plots each day's high.
+- **Inside temperature:** added a DS18B20 probe on GPIO 15, with its reading shown in the header.
+- **Moon:** replaced the drawn moon with a moon photo (`moon.h`).
+- **Battery:**
+  - New voltage reading using the ESP32's calibrated ADC.
+  - A different charge-percentage curve, with full and empty set at 4.185 V and 3.0 V.
+  - The voltage is shown to two decimal places.
+- **Update schedule:**
+  - Updates every 15 minutes instead of every 60.
+  - The overnight pause can start and end on the half hour (23:30 to 06:00), where the original used whole hours (23:00 to 08:00).
+- **Layout tweaks:**
+  - Moved the status, astronomy and main weather sections.
+  - Used a larger font for the main weather section.
+  - Showed the time without seconds.
+- **Units:** imperial and metric are selected by name (`"imperial"` / `"metric"`), not by letter.
