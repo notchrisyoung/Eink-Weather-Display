@@ -46,12 +46,18 @@ Rendered from the firmware's own drawing code with sample data (see [tools/previ
 | LilyGo T5 4.7" (ESP32-WROVER, PSRAM) | The framebuffer lives in PSRAM |
 | DS18B20 temperature probe (optional) | Data on **GPIO 15** with a 4.7k pull-up to 3V3. Without it, the tile shows UV index instead. |
 | Battery: two 18650 cells in parallel | In a 3D-printed holder, wired in parallel as one 3.7 V pack into the board's single-cell battery input. Voltage is read through the board's divider on **GPIO 36**. |
-| 3D-printed case | Holds the panel, board and battery holder |
+| 3D-printed case | Frame and stand in one piece, holding the panel, board and battery holder: [`hardware/Main_Holder.STL`](hardware/Main_Holder.STL) |
 
 | Inside the case | Temperature probe |
 |---|---|
 | ![Board and battery pack inside the case](docs/photos/inside.jpg) | ![DS18B20 soldered to the sensor connector](docs/photos/probe-wiring.jpg) |
 | The T5 board with the two 18650 cells (wired in parallel) glued in beside it | The DS18B20 lies flat on the board, soldered straight to the sensor connector: ground, data on GPIO 15, and power, with a 4.7 kΩ pull-up (yellow-violet-red) between data and power |
+
+### Case
+
+![Case model, front and back](docs/photos/case-model.png)
+
+[`hardware/Main_Holder.STL`](hardware/Main_Holder.STL) is my own design: the frame and a built-in stand printed as one part, about 131 × 88 × 44 mm. The panel sits in the frame, the board and battery holder are glued in behind it, and the cutout in the side gives access to the USB port. GitHub can show the model in 3D: open the file there to rotate it.
 
 ## Setup
 
@@ -80,6 +86,7 @@ Rendered from the firmware's own drawing code with sample data (see [tools/previ
 | `src/fonts/` | Generated Open Sans bitmap fonts |
 | `tools/make_fonts.py` | Regenerates `src/fonts/` from the TTFs in `assets/fonts/` |
 | `tools/preview/` | Renders the screenshots on a PC |
+| `hardware/Main_Holder.STL` | 3D-printable case (frame and stand) |
 
 ## Credits
 
