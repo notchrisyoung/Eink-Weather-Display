@@ -49,6 +49,25 @@ public:
              Align align = Align::Left, uint8_t ink = Tone::Ink, uint8_t paper = Tone::Paper);
     int textWidth(const GFXfont &font, const char *s);
 
+    // Smooth outlined shape described by a signed-distance function: sdf(x, y)
+    // is negative inside, positive outside, in pixels. The outline sits just
+    // inside the edge, `edge` pixels wide; both edges are anti-aliased.
+    template <class SDF>
+    void shape(int x0, int y0, int x1, int y1, SDF sdf, uint8_t fill, uint8_t outline, float edge) {
+        for (int y = y0; y <= y1; y++)
+            for (int x = x0; x <= x1; x++) {
+                float d = sdf((float)x, (float)y);
+                float outer = 0.5f - d;                 // coverage of the whole shape
+                if (outer <= 0) continue;
+                if (outer > 1) outer = 1;
+                float inner = 0.5f - (d + edge);        // coverage of the fill inside the outline
+                inner = inner < 0 ? 0 : (inner > 1 ? 1 : inner);
+                float under = get(x, y);
+                float v = under * (1 - outer) + outline * (outer - inner) + fill * inner;
+                pixel(x, y, (uint8_t)(v + 0.5f));
+            }
+    }
+
 private:
     uint8_t *fb_;
 };

@@ -9,22 +9,42 @@ static const float kPi = 3.14159265f;
 // same art works for the 150 px "now" icon and the 56 px forecast icons.
 // ---------------------------------------------------------------------------
 
-// A puffy cloud: three bumps on a flat-bottomed base. Drawn as an ink
-// silhouette and then refilled `inset` pixels in, which leaves an outline.
-static void cloudShape(Canvas &c, int cx, int cy, float s, int inset, uint8_t tone) {
-    struct Bump { float x, y, r; };
-    const Bump bumps[] = { {-24, 6, 17}, {-3, -9, 24}, {22, 3, 18} };
-    for (const Bump &b : bumps)
-        c.fillCircle(cx + lroundf(b.x * s), cy + lroundf(b.y * s), lroundf(b.r * s) - inset, tone);
-    int left = cx + lroundf(-24 * s), right = cx + lroundf(22 * s);
-    int top = cy + lroundf(4 * s), bottom = cy + lroundf(21 * s);
-    c.fillRect(left, top, right - left, bottom - top - inset, tone);
+// Smooth union: like fminf, but blends the two shapes over a distance k, which
+// rounds the creases between them and keeps the interior free of seams.
+static inline float smoothMin(float a, float b, float k) {
+    float h = fmaxf(k - fabsf(a - b), 0.0f) / k;
+    return fminf(a, b) - h * h * k * 0.25f;
 }
 
+// A puffy cloud: three bumps on a flat-bottomed base. Drawn as an ink
+// silhouette and then refilled `inset` pixels in, which leaves an outline.
+// Signed distance helpers (negative inside), in pixels.
+static inline float sdCircle(float x, float y, float cx, float cy, float r) {
+    return sqrtf((x - cx) * (x - cx) + (y - cy) * (y - cy)) - r;
+}
+// Horizontal capsule: segment from ax to bx at height cy, rounded to radius r.
+static inline float sdCapsule(float x, float y, float ax, float bx, float cy, float r) {
+    float px = x < ax ? ax : (x > bx ? bx : x);
+    return sqrtf((x - px) * (x - px) + (y - cy) * (y - cy)) - r;
+}
+
+// A puffy cloud: three bumps sitting on a rounded base, so the bottom is a
+// smooth flat-ish curve with nothing hanging below it. Drawn as one outlined
+// shape (anti-aliased), so overlapping clouds layer cleanly.
 static void cloud(Canvas &c, int cx, int cy, float s, uint8_t fill) {
-    int edge = s > 0.8f ? 4 : 2;
-    cloudShape(c, cx, cy, s, 0, Tone::Ink);
-    cloudShape(c, cx, cy, s, edge, fill);
+    float edge = s > 0.8f ? 3.5f : 2.0f;
+    float X = (float)cx, Y = (float)cy;
+    auto sdf = [&](float x, float y) {
+        float u = (x - X) / s, v = (y - Y) / s;   // unit space
+        const float k = 3;                                     // blend radius
+        float d = sdCapsule(u, v, -27, 27, 12, 10);            // base
+        d = smoothMin(d, sdCircle(u, v, -17, 4, 13), k);       // left bump
+        d = smoothMin(d, sdCircle(u, v, 2, -8, 21), k);        // big middle bump
+        d = smoothMin(d, sdCircle(u, v, 21, 3, 14), k);        // right bump
+        return d * s;                                          // back to pixels
+    };
+    c.shape(cx - lroundf(40 * s), cy - lroundf(32 * s), cx + lroundf(40 * s), cy + lroundf(25 * s),
+            sdf, fill, Tone::Ink, edge);
 }
 
 static void sun(Canvas &c, int cx, int cy, float s) {
@@ -36,15 +56,25 @@ static void sun(Canvas &c, int cx, int cy, float s) {
         int x1 = cx + lroundf(cosf(a) * 33 * s), y1 = cy + lroundf(sinf(a) * 33 * s);
         c.line(x0, y0, x1, y1, Tone::Ink, thick);
     }
-    c.fillCircle(cx, cy, r, Tone::Ink);
-    c.fillCircle(cx, cy, r - thick, Tone::Faint);
+    float X = (float)cx, Y = (float)cy, R = 15 * s;
+    c.shape(cx - r - 2, cy - r - 2, cx + r + 2, cy + r + 2,
+            [&](float x, float y) { return sdCircle(x, y, X, Y, R); },
+            Tone::Faint, Tone::Ink, s > 0.8f ? 3.5f : 2.0f);
 }
 
-static void crescent(Canvas &c, int cx, int cy, float s, uint8_t behind) {
-    int r = lroundf(20 * s);
-    c.fillCircle(cx, cy, r, Tone::Ink);
-    c.fillCircle(cx, cy, r - (s > 0.8f ? 4 : 2), Tone::Faint);
-    c.fillCircle(cx + lroundf(11 * s), cy - lroundf(8 * s), lroundf(17 * s), behind);
+// Crescent moon: a disc with an offset disc taken out of it, outlined along
+// both curves.
+static void crescent(Canvas &c, int cx, int cy, float s) {
+    float edge = s > 0.8f ? 3.5f : 2.0f;
+    float X = (float)cx, Y = (float)cy;
+    auto sdf = [&](float x, float y) {
+        float u = (x - X) / s, v = (y - Y) / s;
+        float outer = sdCircle(u, v, 0, 0, 20);
+        float bite = sdCircle(u, v, 10, -7, 16);
+        return fmaxf(outer, -bite) * s;   // inside the disc and outside the bite
+    };
+    c.shape(cx - lroundf(23 * s), cy - lroundf(23 * s), cx + lroundf(23 * s), cy + lroundf(23 * s),
+            sdf, Tone::Faint, Tone::Ink, edge);
 }
 
 static void rainStreaks(Canvas &c, int cx, int top, float s, int count, int thick) {
@@ -99,11 +129,11 @@ void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night) {
     int t = s > 0.8f ? 4 : 2;
     switch (sky) {
     case Sky::Clear:
-        if (night) crescent(c, cx, cy, s * 1.4f, Tone::Paper);
+        if (night) crescent(c, cx, cy, s * 1.4f);
         else sun(c, cx, cy, s * 1.25f);
         break;
     case Sky::FewClouds:
-        if (night) crescent(c, cx + lroundf(14 * s), cy - lroundf(14 * s), s, Tone::Paper);
+        if (night) crescent(c, cx + lroundf(12 * s), cy - lroundf(22 * s), s * 0.9f);
         else sun(c, cx + lroundf(14 * s), cy - lroundf(14 * s), s);
         cloud(c, cx - lroundf(4 * s), cy + lroundf(10 * s), s * 0.95f, Tone::Paper);
         break;
@@ -135,8 +165,10 @@ void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night) {
         break;
     case Sky::Sleet:
         cloud(c, cx, cy - lroundf(12 * s), s, Tone::Faint);
-        rainStreaks(c, cx - lroundf(8 * s), cy + lroundf(16 * s), s, 2, t);
-        flake(c, cx + lroundf(18 * s), cy + lroundf(26 * s), s);
+        // one streak, one flake, one streak - evenly spaced under the cloud
+        c.line(cx - lroundf(16 * s), cy + lroundf(16 * s), cx - lroundf(22 * s), cy + lroundf(30 * s), Tone::Ink, t);
+        flake(c, cx, cy + lroundf(24 * s), s);
+        c.line(cx + lroundf(20 * s), cy + lroundf(16 * s), cx + lroundf(14 * s), cy + lroundf(30 * s), Tone::Ink, t);
         break;
     case Sky::Fog:
         fogBands(c, cx, cy, s);
