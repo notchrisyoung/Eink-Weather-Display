@@ -28,8 +28,8 @@ static inline float sdCapsule(float x, float y, float ax, float bx, float cy, fl
     return sqrtf((x - px) * (x - px) + (y - cy) * (y - cy)) - r;
 }
 
-// A puffy cloud: three bumps sitting on a rounded base, so the bottom is a
-// smooth flat-ish curve with nothing hanging below it. Drawn as one outlined
+// A cloud: a wide body with fully rounded ends, a small puff on the left and
+// a big puff just right of centre - the classic cloud silhouette. Drawn as one outlined
 // shape (anti-aliased), so overlapping clouds layer cleanly.
 static void cloud(Canvas &c, int cx, int cy, float s, uint8_t fill) {
     float edge = s > 0.8f ? 3.5f : 2.0f;
@@ -37,10 +37,9 @@ static void cloud(Canvas &c, int cx, int cy, float s, uint8_t fill) {
     auto sdf = [&](float x, float y) {
         float u = (x - X) / s, v = (y - Y) / s;   // unit space
         const float k = 3;                                     // blend radius
-        float d = sdCapsule(u, v, -27, 27, 12, 10);            // base
-        d = smoothMin(d, sdCircle(u, v, -17, 4, 13), k);       // left bump
-        d = smoothMin(d, sdCircle(u, v, 2, -8, 21), k);        // big middle bump
-        d = smoothMin(d, sdCircle(u, v, 21, 3, 14), k);        // right bump
+        float d = sdCapsule(u, v, -27, 27, 11, 12);            // wide body, fully rounded ends
+        d = smoothMin(d, sdCircle(u, v, -14, 2, 12), k);       // smaller puff on the left
+        d = smoothMin(d, sdCircle(u, v, 7, -5, 17), k);        // big puff right of centre
         return d * s;                                          // back to pixels
     };
     c.shape(cx - lroundf(40 * s), cy - lroundf(32 * s), cx + lroundf(40 * s), cy + lroundf(25 * s),
@@ -133,16 +132,16 @@ void drawSkyIcon(Canvas &c, int cx, int cy, int size, Sky sky, bool night) {
         else sun(c, cx, cy, s * 1.25f);
         break;
     case Sky::FewClouds:
-        if (night) crescent(c, cx + lroundf(12 * s), cy - lroundf(22 * s), s * 0.9f);
+        if (night) crescent(c, cx + lroundf(12 * s), cy - lroundf(17 * s), s * 0.9f);
         else sun(c, cx + lroundf(14 * s), cy - lroundf(14 * s), s);
         cloud(c, cx - lroundf(4 * s), cy + lroundf(10 * s), s * 0.95f, Tone::Paper);
         break;
     case Sky::Clouds:
-        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Faint);
+        cloud(c, cx + lroundf(16 * s), cy - lroundf(13 * s), s * 0.75f, Tone::Faint);
         cloud(c, cx - lroundf(6 * s), cy + lroundf(8 * s), s, Tone::Paper);
         break;
     case Sky::Overcast:
-        cloud(c, cx + lroundf(12 * s), cy - lroundf(10 * s), s * 0.75f, Tone::Soft);
+        cloud(c, cx + lroundf(16 * s), cy - lroundf(13 * s), s * 0.75f, Tone::Soft);
         cloud(c, cx - lroundf(6 * s), cy + lroundf(8 * s), s, Tone::Faint);
         break;
     case Sky::Drizzle:
